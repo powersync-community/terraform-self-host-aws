@@ -1,0 +1,11 @@
+# deps / build
+node_modules/
+web/dist/
+
+# minted token + endpoint for the web client
+web/.env.local
+
+# any stray keys
+*.pem
+*.key
+.env

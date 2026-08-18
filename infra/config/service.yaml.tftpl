@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://unpkg.com/@powersync/service-schema@latest/json-schema/powersync-config.json
+#
+# Rendered by Terraform (locals.tf -> base64 -> the config secret).
+# Do NOT commit a rendered copy: it carries the Postgres credentials inline.
+
+port: 8080
+
+# Source database to replicate (Postgres / RDS). The URI carries sslmode=verify-full; the RDS
+# server certificate validates against the AWS RDS CA that ships with the service, so no cacert
+# is needed. (For a database fronted by a private CA, set sslmode=verify-ca and add a cacert with
+# the certificate content in PEM format.)
+replication:
+  connections:
+    - type: postgresql
+      uri: ${source_uri}
+
+# Sync bucket storage connection settings (a separate Postgres database on the same instance).
+storage:
+  type: postgresql
+  uri: ${storage_uri}
+
+sync_rules:
+  content: |
+    ${indent(4, trimspace(sync_rules_content))}
+
+# Client (application end user) authentication settings.
+client_auth:
+  jwks_uri: ${jwks_url}
+  audience: ${jsonencode(jwt_audience)}
+
+# Per-task (per api process) sync concurrency. The image defaults to max_concurrent_connections=200
+# and max_data_fetch_concurrency=10; we pin both so the ceilings are version-stable and the
+# autoscaling math in main.tf (connection_target) references a real number.
+#   max_concurrent_connections — HTTP sync-stream admission. Connection (limit+1) is rejected
+#     instantly with 429 (no queueing). This is the "hard limit" the connection autoscaler targets.
+#   max_data_fetch_concurrency — concurrent bucket-data fetch slots. Connections past this wait on
+#     the semaphore up to 30s then error. Trades against task CPU/mem — raise alongside api sizing.
+# tokens — bearer tokens accepted by the admin/management API endpoints. Sourced from
+#   var.admin_api_token; renders [] when unset (admin API left with no valid token).
+api:
+  tokens: ${jsonencode(api_tokens)}
+  parameters:
+    max_concurrent_connections: ${max_concurrent_connections}
+    max_data_fetch_concurrency: ${max_data_fetch_concurrency}
+
+telemetry:
+  disable_telemetry_sharing: true
+  prometheus_port: ${prometheus_port}

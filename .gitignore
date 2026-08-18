@@ -1,0 +1,4 @@
+# Local env — holds AWS_PROFILE, account IDs, and TF_VAR_* secrets. Commit .env.example only.
+.env
+.env.local
+.envrc

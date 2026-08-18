@@ -1,0 +1,23 @@
+{
+  "logs": {
+    "metrics_collected": {
+      "prometheus": {
+        "log_group_name": "/ecs/${name_prefix}-api/prometheus",
+        "prometheus_config_path": "env:PROMETHEUS_CONFIG_CONTENT",
+        "emf_processor": {
+          "metric_namespace": "PowerSync",
+          "metric_declaration": [
+            {
+              "source_labels": ["job"],
+              "label_matcher": "powersync",
+              "dimensions": [["ClusterName"]],
+              "metric_selectors": [
+                "^powersync_concurrent_connections$"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

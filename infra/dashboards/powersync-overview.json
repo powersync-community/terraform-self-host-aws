@@ -1,0 +1,1887 @@
+{
+  "title": "PowerSync — Self-Hosted Overview",
+  "uid": "powersync-self-hosted-overview",
+  "tags": [
+    "powersync",
+    "observability"
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "refresh": "30s",
+  "timezone": "",
+  "annotations": {
+    "list": [
+      {
+        "name": "Annotations & Alerts",
+        "builtIn": 1,
+        "type": "dashboard",
+        "enable": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        }
+      }
+    ]
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROM",
+        "label": "AMP (Prometheus)",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {},
+        "hide": 0
+      },
+      {
+        "name": "DS_CW",
+        "label": "CloudWatch",
+        "type": "datasource",
+        "query": "cloudwatch",
+        "current": {},
+        "hide": 0
+      },
+      {
+        "name": "DS_OS",
+        "label": "OpenSearch",
+        "type": "datasource",
+        "query": "elasticsearch",
+        "current": {},
+        "hide": 0
+      },
+      {
+        "name": "cluster",
+        "label": "PowerSync cluster",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROM}"
+        },
+        "query": "label_values(powersync_concurrent_connections, cluster)",
+        "refresh": 2,
+        "includeAll": false,
+        "multi": false,
+        "current": {}
+      },
+      {
+        "name": "level",
+        "label": "Log level",
+        "type": "custom",
+        "query": "debug,info,warn,error,fatal",
+        "includeAll": true,
+        "multi": true,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "ecs_cluster",
+        "label": "ECS cluster name",
+        "type": "constant",
+        "query": "powersync-cluster",
+        "current": {
+          "text": "powersync-cluster",
+          "value": "powersync-cluster"
+        },
+        "hide": 2
+      },
+      {
+        "name": "api_service",
+        "label": "API ECS service",
+        "type": "constant",
+        "query": "powersync-api",
+        "current": {
+          "text": "powersync-api",
+          "value": "powersync-api"
+        },
+        "hide": 2
+      },
+      {
+        "name": "repl_service",
+        "label": "Replication ECS service",
+        "type": "constant",
+        "query": "powersync-replication",
+        "current": {
+          "text": "powersync-replication",
+          "value": "powersync-replication"
+        },
+        "hide": 2
+      },
+      {
+        "name": "alb",
+        "label": "Load balancer",
+        "description": "Auto-discovered ALB LoadBalancer dimension value.",
+        "type": "query",
+        "datasource": {
+          "type": "cloudwatch",
+          "uid": "${DS_CW}"
+        },
+        "query": "dimension_values(us-east-1,AWS/ApplicationELB,RequestCount,LoadBalancer)",
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "current": {}
+      },
+      {
+        "name": "targetgroup",
+        "label": "Target group",
+        "description": "Auto-discovered ALB TargetGroup dimension value (needed for HealthyHostCount).",
+        "type": "query",
+        "datasource": {
+          "type": "cloudwatch",
+          "uid": "${DS_CW}"
+        },
+        "query": "dimension_values(us-east-1,AWS/ApplicationELB,HealthyHostCount,TargetGroup)",
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "current": {},
+        "hide": 2
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Service health (SLOs)",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1
+    },
+    {
+      "type": "stat",
+      "title": "Replication lag (now)",
+      "id": 10,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "red",
+                "value": 60
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(powersync_replication_lag_seconds{cluster=~\"$cluster\"})"
+        }
+      ],
+      "description": "Current replication lag — how far behind the source database the replicator is. Green <30s, amber 30–60s, red >60s. The single most important sync-health signal."
+    },
+    {
+      "type": "stat",
+      "title": "Replicator up",
+      "id": 11,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "UP",
+                  "color": "green"
+                },
+                "0": {
+                  "text": "DOWN",
+                  "color": "red"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(count(powersync_replication_lag_seconds{cluster=~\"$cluster\"}) > bool 0)"
+        }
+      ],
+      "description": "Whether the replicator is running and reporting metrics. DOWN means no active replication, so nothing syncs to clients."
+    },
+    {
+      "type": "stat",
+      "title": "API healthy hosts",
+      "id": 12,
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "${DS_CW}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "region": "default",
+          "namespace": "AWS/ApplicationELB",
+          "metricName": "HealthyHostCount",
+          "statistic": "Minimum",
+          "dimensions": {
+            "LoadBalancer": "$alb",
+            "TargetGroup": "$targetgroup"
+          },
+          "metricQueryType": 0,
+          "metricEditorMode": 0
+        }
+      ],
+      "description": "API targets the ALB considers healthy (per target group). Should equal the running API task count; 0 means clients can't reach the sync API."
+    },
+    {
+      "type": "stat",
+      "title": "Concurrent connections",
+      "id": 13,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(powersync_concurrent_connections{cluster=~\"$cluster\"})"
+        }
+      ],
+      "description": "Live client sync connections across all API tasks (powersync_concurrent_connections). This metric also drives API autoscaling."
+    },
+    {
+      "type": "stat",
+      "title": "Ops synced / s",
+      "id": 14,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(powersync_operations_synced_total{cluster=~\"$cluster\"}[5m]))"
+        }
+      ],
+      "description": "Rate of sync operations sent to clients (rate of powersync_operations_synced_total). 'No data' at idle is normal — it means no client traffic."
+    },
+    {
+      "type": "stat",
+      "title": "API 5xx rate",
+      "id": 15,
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "${DS_CW}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "region": "default",
+          "namespace": "AWS/ApplicationELB",
+          "metricName": "HTTPCode_Target_5XX_Count",
+          "statistic": "Sum",
+          "dimensions": {
+            "LoadBalancer": "$alb"
+          },
+          "metricQueryType": 0,
+          "metricEditorMode": 0
+        }
+      ],
+      "description": "ALB target 5xx responses — server-side errors reaching clients. Should stay at 0."
+    },
+    {
+      "type": "row",
+      "title": "Replication pipeline",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "id": 2
+    },
+    {
+      "type": "timeseries",
+      "title": "Replication lag",
+      "id": 20,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "red",
+                "value": 60
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (instance_id) (powersync_replication_lag_seconds{cluster=~\"$cluster\"})",
+          "legendFormat": "{{instance_id}}"
+        }
+      ],
+      "description": "Replication lag over time, per instance. Sustained growth means the replicator is falling behind the source database."
+    },
+    {
+      "type": "timeseries",
+      "title": "Replicated / s (rows · transactions · chunks)",
+      "id": 21,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cps",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(powersync_rows_replicated_total{cluster=~\"$cluster\"}[5m]))",
+          "legendFormat": "rows/s"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(rate(powersync_transactions_replicated_total{cluster=~\"$cluster\"}[5m]))",
+          "legendFormat": "transactions/s"
+        },
+        {
+          "refId": "C",
+          "expr": "sum(rate(powersync_chunks_replicated_total{cluster=~\"$cluster\"}[5m]))",
+          "legendFormat": "chunks/s"
+        }
+      ],
+      "description": "Throughput pulled from the source per second: rows, transactions, and replication chunks. Flatlining while the source is being written indicates a stall."
+    },
+    {
+      "type": "timeseries",
+      "title": "Data replicated (bytes/s)",
+      "id": 22,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(powersync_data_replicated_bytes_total{cluster=~\"$cluster\"}[5m]))",
+          "legendFormat": "replicated"
+        }
+      ],
+      "description": "Uncompressed bytes read from the source and replicated into bucket storage, per second."
+    },
+    {
+      "type": "timeseries",
+      "title": "Replicator restarts (Starting Replication Engine)",
+      "id": 23,
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "${DS_CW}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "${DS_CW}"
+          },
+          "queryMode": "Logs",
+          "region": "default",
+          "logGroupNames": [
+            "/ecs/powersync-replication"
+          ],
+          "expression": "filter @message like /Starting Replication Engine/ | stats count() as restarts by bin(1h)",
+          "statsGroups": []
+        }
+      ],
+      "description": "Count of 'Starting Replication Engine' log lines — each marks a replicator (re)start. Frequent restarts indicate crash-looping."
+    },
+    {
+      "type": "row",
+      "title": "Client sync / API",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
+      "id": 3
+    },
+    {
+      "type": "timeseries",
+      "title": "Concurrent connections",
+      "id": 30,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 23
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(powersync_concurrent_connections{cluster=~\"$cluster\"})",
+          "legendFormat": "connections"
+        }
+      ],
+      "description": "Active client sync connections over time (summed across API tasks)."
+    },
+    {
+      "type": "timeseries",
+      "title": "Sync throughput (ops/s · bytes/s)",
+      "id": 31,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 23
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "data synced/s"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "Bps"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ops synced/s"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ops"
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(powersync_operations_synced_total{cluster=~\"$cluster\"}[5m]))",
+          "legendFormat": "ops synced/s"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(rate(powersync_data_synced_bytes_total{cluster=~\"$cluster\"}[5m]))",
+          "legendFormat": "data synced/s"
+        }
+      ],
+      "description": "Operations and uncompressed bytes synced to clients per second."
+    },
+    {
+      "type": "timeseries",
+      "title": "Compression ratio (sent / synced)",
+      "id": 32,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 23
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "powersync:compression:ratio5m{cluster=~\"$cluster\"}",
+          "legendFormat": "compression ratio"
+        }
+      ],
+      "description": "Bytes sent to clients ÷ uncompressed bytes synced (AMP recording rule). Lower is better wire compression."
+    },
+    {
+      "type": "timeseries",
+      "title": "Bytes per connection",
+      "id": 33,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 31
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "powersync:bytes_per_conn:5m{cluster=~\"$cluster\"}",
+          "legendFormat": "bytes/conn"
+        }
+      ],
+      "description": "Uncompressed sync bytes per active connection (recording rule). Spikes point to heavy per-client buckets."
+    },
+    {
+      "type": "timeseries",
+      "title": "Ops per row (fan-out)",
+      "id": 34,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 31
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "powersync:ops_per_row:5m{cluster=~\"$cluster\"}",
+          "legendFormat": "ops/row"
+        }
+      ],
+      "description": "Operations synced ÷ rows replicated (recording rule). High fan-out means one source row reaches many clients/buckets — often over-broad sync rules."
+    },
+    {
+      "type": "row",
+      "title": "Storage & capacity",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 39
+      },
+      "id": 4
+    },
+    {
+      "type": "timeseries",
+      "title": "Storage size (stacked)",
+      "id": 40,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 40,
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(powersync_replication_storage_size_bytes{cluster=~\"$cluster\"})",
+          "legendFormat": "replication"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(powersync_operation_storage_size_bytes{cluster=~\"$cluster\"})",
+          "legendFormat": "operations"
+        },
+        {
+          "refId": "C",
+          "expr": "sum(powersync_parameter_storage_size_bytes{cluster=~\"$cluster\"})",
+          "legendFormat": "parameters"
+        }
+      ],
+      "description": "Bucket storage size split by replication / operation / parameter data. Watch the total trend for capacity planning."
+    },
+    {
+      "type": "timeseries",
+      "title": "Parameter-storage bloat ratio",
+      "id": 41,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.5
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "powersync:param_bloat:ratio{cluster=~\"$cluster\"}",
+          "legendFormat": "param / data"
+        }
+      ],
+      "description": "Parameter storage ÷ (replication + operation storage), a recording rule. A high or growing ratio precedes checksum timeouts (PSYNC_S2403)."
+    },
+    {
+      "type": "row",
+      "title": "Infrastructure (ECS / ALB)",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 48
+      },
+      "id": 5
+    },
+    {
+      "type": "timeseries",
+      "title": "ECS CPU utilization",
+      "id": 50,
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "${DS_CW}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 49
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "region": "default",
+          "namespace": "AWS/ECS",
+          "metricName": "CPUUtilization",
+          "statistic": "Average",
+          "dimensions": {
+            "ClusterName": "$ecs_cluster",
+            "ServiceName": "$api_service"
+          },
+          "label": "api",
+          "metricQueryType": 0,
+          "metricEditorMode": 0
+        },
+        {
+          "refId": "B",
+          "region": "default",
+          "namespace": "AWS/ECS",
+          "metricName": "CPUUtilization",
+          "statistic": "Average",
+          "dimensions": {
+            "ClusterName": "$ecs_cluster",
+            "ServiceName": "$repl_service"
+          },
+          "label": "replication",
+          "metricQueryType": 0,
+          "metricEditorMode": 0
+        }
+      ],
+      "description": "Average CPU % per service (api, replication). The API autoscaler targets a CPU threshold."
+    },
+    {
+      "type": "timeseries",
+      "title": "ECS memory utilization",
+      "id": 51,
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "${DS_CW}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 49
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "region": "default",
+          "namespace": "AWS/ECS",
+          "metricName": "MemoryUtilization",
+          "statistic": "Average",
+          "dimensions": {
+            "ClusterName": "$ecs_cluster",
+            "ServiceName": "$api_service"
+          },
+          "label": "api",
+          "metricQueryType": 0,
+          "metricEditorMode": 0
+        },
+        {
+          "refId": "B",
+          "region": "default",
+          "namespace": "AWS/ECS",
+          "metricName": "MemoryUtilization",
+          "statistic": "Average",
+          "dimensions": {
+            "ClusterName": "$ecs_cluster",
+            "ServiceName": "$repl_service"
+          },
+          "label": "replication",
+          "metricQueryType": 0,
+          "metricEditorMode": 0
+        }
+      ],
+      "description": "Average memory % per service. Sustained high memory risks OOM and task restarts."
+    },
+    {
+      "type": "timeseries",
+      "title": "API running task count",
+      "id": 52,
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "${DS_CW}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 49
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "region": "default",
+          "namespace": "ECS/ContainerInsights",
+          "metricName": "RunningTaskCount",
+          "statistic": "Average",
+          "dimensions": {
+            "ClusterName": "$ecs_cluster",
+            "ServiceName": "$api_service"
+          },
+          "label": "running",
+          "metricQueryType": 0,
+          "metricEditorMode": 0
+        }
+      ],
+      "description": "Running API Fargate tasks (Container Insights). Moves between min and max capacity as the autoscaler reacts to load."
+    },
+    {
+      "type": "timeseries",
+      "title": "ALB requests & 5xx",
+      "id": 53,
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "${DS_CW}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 57
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "region": "default",
+          "namespace": "AWS/ApplicationELB",
+          "metricName": "RequestCount",
+          "statistic": "Sum",
+          "dimensions": {
+            "LoadBalancer": "$alb"
+          },
+          "label": "requests",
+          "metricQueryType": 0,
+          "metricEditorMode": 0
+        },
+        {
+          "refId": "B",
+          "region": "default",
+          "namespace": "AWS/ApplicationELB",
+          "metricName": "HTTPCode_Target_5XX_Count",
+          "statistic": "Sum",
+          "dimensions": {
+            "LoadBalancer": "$alb"
+          },
+          "label": "target 5xx",
+          "metricQueryType": 0,
+          "metricEditorMode": 0
+        }
+      ],
+      "description": "ALB request volume and target 5xx count. A rising 5xx line means server errors are reaching clients."
+    },
+    {
+      "type": "timeseries",
+      "title": "ALB target response time (p50 / p90 / p99)",
+      "id": 54,
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "${DS_CW}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 57
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "region": "default",
+          "namespace": "AWS/ApplicationELB",
+          "metricName": "TargetResponseTime",
+          "statistic": "p50",
+          "dimensions": {
+            "LoadBalancer": "$alb"
+          },
+          "label": "p50",
+          "metricQueryType": 0,
+          "metricEditorMode": 0
+        },
+        {
+          "refId": "B",
+          "region": "default",
+          "namespace": "AWS/ApplicationELB",
+          "metricName": "TargetResponseTime",
+          "statistic": "p90",
+          "dimensions": {
+            "LoadBalancer": "$alb"
+          },
+          "label": "p90",
+          "metricQueryType": 0,
+          "metricEditorMode": 0
+        },
+        {
+          "refId": "C",
+          "region": "default",
+          "namespace": "AWS/ApplicationELB",
+          "metricName": "TargetResponseTime",
+          "statistic": "p99",
+          "dimensions": {
+            "LoadBalancer": "$alb"
+          },
+          "label": "p99",
+          "metricQueryType": 0,
+          "metricEditorMode": 0
+        }
+      ],
+      "description": "Latency of API responses behind the ALB (p50/p90/p99). A climbing p99 indicates slow sync responses under load."
+    },
+    {
+      "type": "row",
+      "title": "Compaction",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 65
+      },
+      "id": 6
+    },
+    {
+      "type": "stat",
+      "title": "Successful compactions (range)",
+      "id": 60,
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "${DS_CW}"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 66
+      },
+      "description": "Count of 'Successfully compacted' lines in the compact log group over the dashboard range. Compaction runs daily at 02:00 UTC.",
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "${DS_CW}"
+          },
+          "queryMode": "Logs",
+          "region": "default",
+          "logGroupNames": [
+            "/ecs/powersync-compact"
+          ],
+          "expression": "filter @message like /Successfully compacted/ | stats count() as successes",
+          "statsGroups": []
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Scheduled-run launch failures (range)",
+      "id": 63,
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "${DS_CW}"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 66
+      },
+      "description": "EventBridge FailedInvocations for the compact rule — the task failed to LAUNCH (no app logs are produced in that case). >0 means scheduled compaction is broken.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "region": "default",
+          "namespace": "AWS/Events",
+          "metricName": "FailedInvocations",
+          "statistic": "Sum",
+          "dimensions": {
+            "RuleName": "powersync-compact-daily"
+          },
+          "metricQueryType": 0,
+          "metricEditorMode": 0
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Compaction runs over time",
+      "id": 61,
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "${DS_CW}"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 66
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "pointSize": 8
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "${DS_CW}"
+          },
+          "queryMode": "Logs",
+          "region": "default",
+          "logGroupNames": [
+            "/ecs/powersync-compact"
+          ],
+          "expression": "filter @message like /Successfully compacted/ or @message like /Failed to compact/ | stats count() as runs by bin(1d)",
+          "statsGroups": []
+        }
+      ],
+      "description": "Compaction runs (success vs failure) over time, from the compact log group."
+    },
+    {
+      "type": "logs",
+      "title": "Compaction logs",
+      "id": 62,
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "${DS_CW}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 72
+      },
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "${DS_CW}"
+          },
+          "queryMode": "Logs",
+          "region": "default",
+          "logGroupNames": [
+            "/ecs/powersync-compact"
+          ],
+          "expression": "fields @timestamp, @message | sort @timestamp desc | limit 100",
+          "statsGroups": []
+        }
+      ],
+      "description": "Raw compact task logs — the 'Performing / Successfully / Failed to compact' lines."
+    },
+    {
+      "type": "row",
+      "title": "Errors",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 80
+      },
+      "id": 7
+    },
+    {
+      "type": "timeseries",
+      "title": "[API] Error rate by level",
+      "id": 70,
+      "datasource": {
+        "type": "elasticsearch",
+        "uid": "${DS_OS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 81
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "alias": "warn",
+          "query": "log_group:\"/ecs/powersync-api\" AND level:warn",
+          "queryType": "lucene",
+          "timeField": "@timestamp",
+          "metrics": [
+            {
+              "type": "count",
+              "id": "1"
+            }
+          ],
+          "bucketAggs": [
+            {
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "id": "2",
+              "settings": {
+                "interval": "auto"
+              }
+            }
+          ]
+        },
+        {
+          "refId": "B",
+          "alias": "error",
+          "query": "log_group:\"/ecs/powersync-api\" AND level:error",
+          "queryType": "lucene",
+          "timeField": "@timestamp",
+          "metrics": [
+            {
+              "type": "count",
+              "id": "1"
+            }
+          ],
+          "bucketAggs": [
+            {
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "id": "2",
+              "settings": {
+                "interval": "auto"
+              }
+            }
+          ]
+        },
+        {
+          "refId": "C",
+          "alias": "fatal",
+          "query": "log_group:\"/ecs/powersync-api\" AND level:fatal",
+          "queryType": "lucene",
+          "timeField": "@timestamp",
+          "metrics": [
+            {
+              "type": "count",
+              "id": "1"
+            }
+          ],
+          "bucketAggs": [
+            {
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "id": "2",
+              "settings": {
+                "interval": "auto"
+              }
+            }
+          ]
+        }
+      ],
+      "description": "API warn/error/fatal log volume over time (stacked by level). Flat or empty is healthy."
+    },
+    {
+      "type": "timeseries",
+      "title": "[API] Auth failures",
+      "id": 72,
+      "datasource": {
+        "type": "elasticsearch",
+        "uid": "${DS_OS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 81
+      },
+      "description": "API auth failures — auth-related terms inside warn/error/fatal log bodies only (guarded to avoid matching numeric substrings like 401 inside op-ids).",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "log_group:\"/ecs/powersync-api\" AND level:(warn OR error OR fatal) AND message:(\"authorization\" OR \"jwt\" OR \"token\" OR \"audience\" OR \"jwks\" OR \"unauthorized\")",
+          "queryType": "lucene",
+          "timeField": "@timestamp",
+          "metrics": [
+            {
+              "type": "count",
+              "id": "1"
+            }
+          ],
+          "bucketAggs": [
+            {
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "id": "2",
+              "settings": {
+                "interval": "auto"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "[API] PSYNC error codes",
+      "id": 71,
+      "datasource": {
+        "type": "elasticsearch",
+        "uid": "${DS_OS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 81
+      },
+      "description": "API log lines containing a PSYNC_* code (the code is in the message text — open the log panel or Discover for the specific code).",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "log_group:\"/ecs/powersync-api\" AND message:PSYNC_*",
+          "queryType": "lucene",
+          "timeField": "@timestamp",
+          "metrics": [
+            {
+              "type": "count",
+              "id": "1"
+            }
+          ],
+          "bucketAggs": [
+            {
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "id": "2",
+              "settings": {
+                "interval": "auto"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "[Replicator] Error rate by level",
+      "id": 76,
+      "datasource": {
+        "type": "elasticsearch",
+        "uid": "${DS_OS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 89
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "alias": "warn",
+          "query": "log_group:\"/ecs/powersync-replication\" AND level:warn",
+          "queryType": "lucene",
+          "timeField": "@timestamp",
+          "metrics": [
+            {
+              "type": "count",
+              "id": "1"
+            }
+          ],
+          "bucketAggs": [
+            {
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "id": "2",
+              "settings": {
+                "interval": "auto"
+              }
+            }
+          ]
+        },
+        {
+          "refId": "B",
+          "alias": "error",
+          "query": "log_group:\"/ecs/powersync-replication\" AND level:error",
+          "queryType": "lucene",
+          "timeField": "@timestamp",
+          "metrics": [
+            {
+              "type": "count",
+              "id": "1"
+            }
+          ],
+          "bucketAggs": [
+            {
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "id": "2",
+              "settings": {
+                "interval": "auto"
+              }
+            }
+          ]
+        },
+        {
+          "refId": "C",
+          "alias": "fatal",
+          "query": "log_group:\"/ecs/powersync-replication\" AND level:fatal",
+          "queryType": "lucene",
+          "timeField": "@timestamp",
+          "metrics": [
+            {
+              "type": "count",
+              "id": "1"
+            }
+          ],
+          "bucketAggs": [
+            {
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "id": "2",
+              "settings": {
+                "interval": "auto"
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Replicator warn/error/fatal log volume over time (stacked by level)."
+    },
+    {
+      "type": "timeseries",
+      "title": "[Replicator] Replication signals (slot / LSN / snapshot / ECONNRESET / timeout)",
+      "id": 73,
+      "datasource": {
+        "type": "elasticsearch",
+        "uid": "${DS_OS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 89
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "log_group:\"/ecs/powersync-replication\" AND message:(slot OR LSN OR snapshot OR ECONNRESET OR Timeout)",
+          "queryType": "lucene",
+          "timeField": "@timestamp",
+          "metrics": [
+            {
+              "type": "count",
+              "id": "1"
+            }
+          ],
+          "bucketAggs": [
+            {
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "id": "2",
+              "settings": {
+                "interval": "auto"
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Occurrences of slot / LSN / snapshot / ECONNRESET / timeout in replicator logs — early indicators of replication trouble (slot invalidation, change-stream timeouts, connection resets)."
+    },
+    {
+      "type": "row",
+      "title": "Logs",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 97
+      },
+      "id": 8
+    },
+    {
+      "type": "logs",
+      "title": "[API] Recent logs",
+      "id": 75,
+      "datasource": {
+        "type": "elasticsearch",
+        "uid": "${DS_OS}"
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 12,
+        "x": 0,
+        "y": 98
+      },
+      "description": "Live API log lines (both API tasks — distinguish by log_stream), newest first. Level is controlled by the $level dropdown; refine further with the query bar.",
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending",
+        "enableLogDetails": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "log_group:\"/ecs/powersync-api\" AND level:${level:lucene}",
+          "queryType": "lucene",
+          "timeField": "@timestamp",
+          "metrics": [
+            {
+              "type": "logs",
+              "id": "1"
+            }
+          ],
+          "bucketAggs": []
+        }
+      ]
+    },
+    {
+      "type": "logs",
+      "title": "[Replicator] Recent logs",
+      "id": 77,
+      "datasource": {
+        "type": "elasticsearch",
+        "uid": "${DS_OS}"
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 12,
+        "x": 12,
+        "y": 98
+      },
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending",
+        "enableLogDetails": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "log_group:\"/ecs/powersync-replication\" AND level:${level:lucene}",
+          "queryType": "lucene",
+          "timeField": "@timestamp",
+          "metrics": [
+            {
+              "type": "logs",
+              "id": "1"
+            }
+          ],
+          "bucketAggs": []
+        }
+      ],
+      "description": "Live replicator log lines, newest first. Level is controlled by the $level dropdown."
+    }
+  ]
+}
