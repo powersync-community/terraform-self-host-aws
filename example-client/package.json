@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Seeding + token + a minimal client to exercise the self-hosted PowerSync deployment end-to-end.",
   "scripts": {
+    "bootstrap": "tsx bootstrap-db.ts",
     "seed": "tsx seed/seed.ts",
     "clear": "tsx seed/clear.ts",
     "token": "tsx auth/mint-token.ts",

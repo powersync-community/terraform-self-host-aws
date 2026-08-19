@@ -217,7 +217,6 @@ module "ecs" {
   health_check_grace = 120 # ECS service health-check grace period (seconds)
   stop_timeout       = 120 # container stopTimeout — graceful sync drain before SIGKILL
 
-  # Config secret + cw-agent param must exist, and the Postgres roles/publication/storage db must
-  # be bootstrapped, before the tasks start.
-  depends_on = [module.secrets, terraform_data.db_bootstrap]
+  # Config secret + cw-agent param must exist before the tasks start.
+  depends_on = [module.secrets]
 }

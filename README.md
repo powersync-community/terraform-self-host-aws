@@ -65,8 +65,8 @@ flowchart LR
 - **AWS account** — credentials for the target account, plus, pre-created out of band:
   - an **S3 bucket** for Terraform state (the `backend "s3"` bucket in `infra/versions.tf`),
   - a **Route 53 hosted zone** for your `base_domain` (Terraform requests the ACM cert + alias into it).
-- **Tooling** — Terraform ≥ 1.10, the AWS CLI, `psql` (for the one-time DB bootstrap), and Node ≥ 20
-  (for `example-client`).
+- **Tooling** — Terraform ≥ 1.10, the AWS CLI, and Node ≥ 20 (for the `example-client` toolkit,
+  which also runs the one-time DB bootstrap — no `psql` needed).
 
 ## Configuration
 
@@ -85,13 +85,13 @@ workstation IP to seed and run the client locally, and pick a `deployment_name` 
 ```bash
 # 1. Deploy (prerequisites + config above)
 cd infra
-terraform init \
-  -backend-config="bucket=<your-tf-state-bucket>" \
-  -backend-config="key=$TF_VAR_deployment_name/infra/terraform.tfstate"
+# set your state bucket in versions.tf, then pass the per-deployment key:
+terraform init -backend-config="key=$TF_VAR_deployment_name/infra/terraform.tfstate"
 terraform apply
 
 # 2. Seed test data + run a client (see example-client/README.md)
 cd ../example-client && npm install && npm install --prefix web
+npm run bootstrap     # one-time: create PowerSync's DB roles, publication, storage database
 npm run seed          # create + load the demo `lists` table
 npm run dev           # mint a token + open the React client
 ```

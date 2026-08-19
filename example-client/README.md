@@ -12,6 +12,7 @@ React client never touches the database directly — it syncs through the public
 
 | Command | What it does |
 |---|---|
+| `npm run bootstrap` | One-time after `terraform apply`: create PowerSync's DB roles, the `powersync` publication, the bucket-storage database, and source-read grants (idempotent). |
 | `npm run seed` | Create the demo `lists` table (if needed) and load a small dataset owned by two users. |
 | `npm run clear` | Drop the `lists` table. |
 | `npm run token` | Mint a 12h RS256 JWT (key from Secrets Manager) for `example-user` → writes `web/.env.local`. |
@@ -25,7 +26,18 @@ React client never touches the database directly — it syncs through the public
 - Node ≥ 20 and `terraform` on PATH (the scripts read `terraform output`).
 - `npm install` (here) and `npm install --prefix web`.
 
-## 1. Seed the database
+## 1. Bootstrap the database (one-time, after apply)
+
+```bash
+npm run bootstrap
+```
+
+Creates the two least-privilege roles, the `powersync` publication, the bucket-storage database, and
+the source-read grants — using the `pg` driver (no `psql`) as the RDS master, reading everything from
+`terraform output`. Idempotent. Run it once after `terraform apply`; the ECS services stay in a retry
+loop until it completes, then go healthy.
+
+## 2. Seed the database
 
 ```bash
 npm run seed
@@ -35,7 +47,7 @@ Creates `lists` and inserts rows for two users: `example-user` (which the minted
 `someone-else` (which it must **not** — demonstrating the per-user sync rule). Re-run any time; it
 truncates and re-inserts. The replicator picks up the change within a few seconds.
 
-## 2. Mint a token + run the client
+## 3. Mint a token + run the client
 
 ```bash
 npm run dev            # = npm run token (writes web/.env.local) + vite dev server
@@ -47,7 +59,7 @@ The page connects to the deployed PowerSync ALB and live-renders the `lists` syn
 **Seeing your seeded rows in the browser proves the full path — Postgres → replicator → bucket
 storage → sync API → client.**
 
-## 3. (Optional) Verify least-privilege
+## 4. (Optional) Verify least-privilege
 
 ```bash
 npm run test:least-privilege

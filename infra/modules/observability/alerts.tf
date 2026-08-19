@@ -209,7 +209,8 @@ resource "aws_cloudwatch_metric_alarm" "compaction_failed" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "api_no_healthy_hosts" {
-  count               = var.enable_observability && var.alb_arn_suffix != "" ? 1 : 0
+  # count is gated on enable_observability, which is known at plan time.
+  count               = var.enable_observability ? 1 : 0
   alarm_name          = "${var.name_prefix}-api-no-healthy-hosts"
   namespace           = "AWS/ApplicationELB"
   metric_name         = "HealthyHostCount"
@@ -226,7 +227,7 @@ resource "aws_cloudwatch_metric_alarm" "api_no_healthy_hosts" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "api_5xx" {
-  count               = var.enable_observability && var.alb_arn_suffix != "" ? 1 : 0
+  count               = var.enable_observability ? 1 : 0
   alarm_name          = "${var.name_prefix}-api-target-5xx"
   namespace           = "AWS/ApplicationELB"
   metric_name         = "HTTPCode_Target_5XX_Count"

@@ -37,8 +37,10 @@ Roughly in dependency order:
 - **RDS** — one PostgreSQL instance with `rds.logical_replication = 1`, hosting the source database
   (`app`) and, after the bootstrap, the bucket-storage database (`powersync`). Publicly accessible
   (demo convenience) but locked to the ECS tasks and `var.admin_cidr` by its security group.
-- **Database bootstrap** (`database.tf`) — runs `psql` to create two least-privilege roles, the
-  `powersync` publication, the storage database, and the source-read grants (idempotent).
+- **Database role passwords** (`database.tf`) — Terraform generates the two role passwords and bakes
+  them into the config secret. The roles themselves, the `powersync` publication, the storage
+  database, and the source-read grants are created **after apply** by a one-time script
+  (`example-client`'s `npm run bootstrap`) — not by Terraform (see [Database bootstrap](#database-bootstrap)).
 - **ALB** — a DNS-validated ACM certificate, the ALB, target group, HTTPS listener, a Route 53 alias
   at `<deployment_name>.<base_domain>`, and a fixed-response rule serving the JWKS at `/api/auth/keys`.
 - **ECS** — the cluster, three task definitions (replication / api / compact), the replication and
@@ -105,8 +107,8 @@ set `enable_opensearch = false` to keep metrics + dashboards at near-zero extra 
    Terraform ≥ 1.10 for native S3 locking.
 3. **Route 53 hosted zone** for `base_domain` — Terraform requests the ACM cert, writes the
    validation records, and creates the `<deployment_name>.<base_domain>` alias.
-4. **`psql`** on your PATH (the `database.tf` bootstrap runs it), and network reachability to RDS
-   (set `admin_cidr` to your workstation IP).
+4. **Node ≥ 20** (the one-time DB bootstrap and the example client run from `example-client`), and
+   network reachability to RDS (set `admin_cidr` to your workstation IP).
 
 ## Setup
 
@@ -119,13 +121,28 @@ Required vars: `account_id`, `base_domain`, `route53_zone_id`. Recommended: `adm
 
 ## Apply
 
+The `bucket` is set in `versions.tf`; pass the per-deployment state `key` at init (see the backend
+note in `versions.tf`):
+
 ```bash
-terraform init \
-  -backend-config="bucket=<your-tf-state-bucket>" \
-  -backend-config="key=$TF_VAR_deployment_name/infra/terraform.tfstate"
+terraform init -backend-config="key=$TF_VAR_deployment_name/infra/terraform.tfstate"
 terraform fmt -check && terraform validate
-terraform apply        # single pass — network, RDS, bootstrap, ECS, ALB
+terraform apply        # network, RDS, ECS, ALB
 ```
+
+## Database bootstrap
+
+After apply, create PowerSync's Postgres roles, publication, and storage database once:
+
+```bash
+cd ../example-client && npm install
+npm run bootstrap
+```
+
+This runs from the companion toolkit (Node + the `pg` driver — no `psql`), reads the endpoint and
+the Terraform-generated role passwords from `terraform output`, and temporarily allowlists your IP
+on the RDS security group. It is idempotent. Until it runs, the ECS services keep retrying their
+database connection; once it completes they become healthy and replication begins.
 
 ## Verify
 
