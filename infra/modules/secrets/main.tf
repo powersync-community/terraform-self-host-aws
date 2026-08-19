@@ -1,5 +1,5 @@
 # Single config secret. The rendered+base64 service.yaml carries the creds, so they live
-# here and are referenced by the task defs only by prefix ARN — never inlined into a task def.
+# here and are referenced by the task defs only by prefix ARN, never inlined into a task def.
 # recovery_window_in_days = 0 so destroy/apply can recreate the name immediately.
 resource "aws_secretsmanager_secret" "config" {
   name                    = var.config_secret_name

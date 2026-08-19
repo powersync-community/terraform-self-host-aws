@@ -1,4 +1,4 @@
-# Terraform — state holds the rendered config secret (Postgres URIs + JWKS URL) in plaintext,
+# Terraform state holds the rendered config secret (Postgres URIs + JWKS URL) in plaintext,
 # so keep the S3 state bucket private, versioned, and encrypted.
 *.tfstate
 *.tfstate.*
@@ -7,22 +7,22 @@
 crash.log
 crash.*.log
 
-# Saved plan files embed sensitive values (rendered config secret) in plaintext — never commit.
+# Saved plan files embed sensitive values (rendered config secret) in plaintext; never commit.
 *.tfplan
 tfplan
 
-# Variable files carry secrets — never commit. Keep terraform.tfvars.example tracked.
+# Variable files carry secrets; never commit. Keep terraform.tfvars.example tracked.
 *.tfvars
 *.tfvars.json
 !*.tfvars.example
 
-# A rendered service.yaml would carry creds — never commit one if generated locally.
+# A rendered service.yaml would carry creds; never commit one if generated locally.
 config/service.yaml
 
-# Lambda zip built by archive_file at plan time — a build artifact, not source.
+# Lambda zip built by archive_file at plan time, a build artifact, not source.
 modules/observability/lambda/*.zip
 
-# JWT signing key for the JWKS endpoint — private, never commit. The public auth/jwks.json
+# JWT signing key for the JWKS endpoint, private; never commit. The public auth/jwks.json
 # and auth/jwt-kid.txt are safe to track (jwks.json is the ALB fixed-response body).
 auth/*.pem
 auth/*.key

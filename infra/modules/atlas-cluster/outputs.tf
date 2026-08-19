@@ -9,7 +9,7 @@ output "standard_srv" {
 }
 
 output "private_endpoint_srv" {
-  description = "Private-endpoint-aware (-pri) mongodb+srv:// string for OUR interface endpoint. The cluster can list several private_endpoint entries (one per registered/stale AWS endpoint), each with a distinct pl-N host — picking the wrong one resolves to an endpoint not in this VPC (ENOTFOUND). Match on aws_vpc_endpoint.atlas.id so we always get the host that resolves to our ENIs."
+  description = "Private-endpoint-aware (-pri) mongodb+srv:// string for our interface endpoint. The cluster can list several private_endpoint entries (one per registered/stale AWS endpoint), each with a distinct pl-N host; picking the wrong one resolves to an endpoint not in this VPC (ENOTFOUND). Match on aws_vpc_endpoint.atlas.id so we always get the host that resolves to our ENIs."
   # Read from the data source (refreshed after the endpoint is live), not the resource, so this
   # is populated on a single fresh apply. Match on our endpoint id, never a fixed index.
   value = try(one([
@@ -44,7 +44,7 @@ output "vpc_endpoint_id" {
 }
 
 output "vpc_endpoint_dns" {
-  description = "DNS entries of the interface endpoint — only populated for the instance that creates it (null when reusing a shared endpoint)."
+  description = "DNS entries of the interface endpoint, only populated for the instance that creates it (null when reusing a shared endpoint)."
   value       = var.create_private_endpoint ? aws_vpc_endpoint.atlas[0].dns_entry : null
 }
 

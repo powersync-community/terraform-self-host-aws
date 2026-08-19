@@ -1,5 +1,5 @@
 ###############################################################################
-# Amazon OpenSearch — log search + native Dashboards.
+# Amazon OpenSearch: log search + native Dashboards.
 #
 # Public-access mode (AWS-provided endpoint, no custom domain/DNS), secured by
 # fine-grained access control with an internal master user (for Dashboards login).

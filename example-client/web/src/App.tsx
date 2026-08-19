@@ -16,7 +16,7 @@ export default function App() {
   return (
     <PowerSyncContext.Provider value={db}>
       <main style={{ fontFamily: "system-ui, sans-serif", padding: 24, maxWidth: 640, margin: "0 auto" }}>
-        <h1>PowerSync on AWS — demo</h1>
+        <h1>PowerSync on AWS (demo)</h1>
         <StatusBar />
         <Lists />
       </main>

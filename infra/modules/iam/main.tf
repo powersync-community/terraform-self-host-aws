@@ -33,7 +33,7 @@ data "aws_iam_policy_document" "events_assume" {
 }
 
 ###############################################################################
-# Task execution role — pulls secrets/SSM and the image, writes logs.
+# Task execution role: pulls secrets/SSM and the image, writes logs.
 ###############################################################################
 
 resource "aws_iam_role" "execution" {
@@ -71,7 +71,7 @@ resource "aws_iam_role_policy" "execution_secrets" {
 }
 
 ###############################################################################
-# Task role — cw-agent sidecar publishes metrics + writes EMF logs.
+# Task role: cw-agent sidecar publishes metrics + writes EMF logs.
 ###############################################################################
 
 resource "aws_iam_role" "task" {
@@ -102,7 +102,7 @@ resource "aws_iam_role_policy" "task_cloudwatch" {
   policy = data.aws_iam_policy_document.task_cloudwatch.json
 }
 
-# AMP remote-write — granted when observability is enabled so the ADOT sidecar can
+# AMP remote-write: granted when observability is enabled so the ADOT sidecar can
 # push metrics to the AMP workspace. Its awsemf exporter (autoscaling metric) is
 # covered by the CloudWatchMetrics policy above.
 data "aws_iam_policy_document" "task_amp" {
@@ -122,7 +122,7 @@ resource "aws_iam_role_policy" "task_amp" {
 }
 
 ###############################################################################
-# Grafana workspace role — AMG (CUSTOMER_MANAGED) assumes this to query AMP +
+# Grafana workspace role: AMG (CUSTOMER_MANAGED) assumes this to query AMP +
 # CloudWatch. Created only when observability is enabled.
 ###############################################################################
 
@@ -186,7 +186,7 @@ resource "aws_iam_role_policy" "grafana_cloudwatch" {
 }
 
 ###############################################################################
-# Log-indexer Lambda role (OpenSearch) — assumed by the CloudWatch-Logs->OpenSearch
+# Log-indexer Lambda role (OpenSearch): assumed by the CloudWatch-Logs->OpenSearch
 # Lambda. ARNs are constructed from name_prefix/region/account so this module does
 # not depend on the observability module (avoids a cycle).
 ###############################################################################
@@ -287,7 +287,7 @@ resource "aws_iam_role_policy" "alert_lambda" {
 }
 
 ###############################################################################
-# EventBridge role — runs the scheduled compact task.
+# EventBridge role: runs the scheduled compact task.
 ###############################################################################
 
 resource "aws_iam_role" "events" {

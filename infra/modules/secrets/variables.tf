@@ -15,7 +15,7 @@ variable "config_api_secret_name" {
 }
 
 variable "config_api_b64" {
-  description = "Base64-encoded service.yaml for the api task — storage uses the least-privilege user."
+  description = "Base64-encoded service.yaml for the api task, storage uses the least-privilege user."
   type        = string
   sensitive   = true
 }

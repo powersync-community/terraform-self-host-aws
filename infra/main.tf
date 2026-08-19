@@ -1,7 +1,7 @@
 data "aws_caller_identity" "current" {}
 
 ###############################################################################
-# Guards — fail the plan early on a wrong account or an illegal Fargate CPU/memory pair.
+# Guards. Fail the plan early on a wrong account or an illegal Fargate CPU/memory pair.
 ###############################################################################
 
 resource "terraform_data" "guards" {
@@ -66,11 +66,11 @@ module "rds" {
 #      Postgres locals in locals.tf to the Atlas mongodb+srv URIs (see git history for the shape).
 #   3. Re-add the Atlas PrivateLink security group to modules/network.
 #
-# IMPORTANT — the deployment_name prefix does NOT give you isolated multi-deployment on Atlas the
+# IMPORTANT: the deployment_name prefix does not give you isolated multi-deployment on Atlas the
 # way it does on RDS. Atlas allows only ONE PrivateLink endpoint service per region per project,
 # and a cluster's private endpoint is shared across the region/project. So two Atlas-backed
-# deployments in the SAME Atlas project and region cannot each stand up their own private endpoint
-# — give each deployment its own Atlas project (or region) if you need them side by side. (RDS has
+# deployments in the same Atlas project and region cannot each stand up their own private endpoint
+# Give each deployment its own Atlas project (or region) if you need them side by side. (RDS has
 # no such limit, which is why it is the default here.)
 #
 # module "atlas" {
@@ -206,16 +206,16 @@ module "ecs" {
   compact_node_options = local.compact_node_options
   compact_schedule     = "cron(0 2 * * ? *)" # daily compact job, 02:00 UTC
 
-  # Autoscaling — tuned for ~500 concurrent connections.
+  # Autoscaling tuned for ~500 concurrent connections.
   api_min_capacity   = 2 # HA floor
   api_max_capacity   = 8 # ceil(500/80)=7 at peak + 1 task of headroom
   connection_target  = floor(local.ps_max_concurrent_connections * 0.4)
   cpu_target         = 70  # target avg CPU utilization (%)
   scale_out_cooldown = 120 # new Fargate tasks take 1-3 min to become ready
-  scale_in_cooldown  = 300 # conservative — avoid reconnection oscillation
+  scale_in_cooldown  = 300 # conservative; avoid reconnection oscillation
 
   health_check_grace = 120 # ECS service health-check grace period (seconds)
-  stop_timeout       = 120 # container stopTimeout — graceful sync drain before SIGKILL
+  stop_timeout       = 120 # container stopTimeout; graceful sync drain before SIGKILL
 
   # Config secret + cw-agent param must exist before the tasks start.
   depends_on = [module.secrets]

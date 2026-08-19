@@ -10,7 +10,7 @@
 # Usage:
 #   scripts/test-alert.sh [ALARM_NAME] [STATE]
 #     ALARM_NAME  defaults to powersync-api-cpu-high
-#     STATE       ALARM (default) | OK  — run ALARM then OK to test both paths
+#     STATE       ALARM (default) | OK . Run ALARM then OK to test both paths
 #
 # Requires AWS credentials with cloudwatch:SetAlarmState (set AWS_PROFILE first).
 

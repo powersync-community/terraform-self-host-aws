@@ -8,7 +8,7 @@ locals {
   compact_container  = "${var.name_prefix}-compact"
   cwagent_container  = "cloudwatch-agent"
 
-  # Log groups (explicit, with retention — NOT awslogs-create-group, which orphans groups on
+  # Log groups (explicit, with retention; not awslogs-create-group, which orphans groups on
   # destroy and races on re-apply). The prometheus group name is also hardcoded in
   # config/cw-agent-config.json; if you change name_prefix, update that file's log_group_name.
   lg_replication = "/ecs/${var.name_prefix}-replication"
@@ -30,7 +30,7 @@ locals {
 }
 
 ###############################################################################
-# Observability sidecar — the api task runs exactly one metrics sidecar:
+# Observability sidecar. The api task runs exactly one metrics sidecar:
 # the ADOT collector when enable_observability is true, the cw-agent otherwise.
 ###############################################################################
 
@@ -38,10 +38,10 @@ locals {
   # ADOT collector config, passed inline via AOT_CONFIG_CONTENT. It scrapes the
   # in-task prometheus endpoint and fans the metrics out to two exporters:
   #   - prometheusremotewrite -> AMP (all powersync_* metrics, SigV4-signed)
-  #   - awsemf -> CloudWatch, ONLY powersync_concurrent_connections, which the
+  #   - awsemf -> CloudWatch, only powersync_concurrent_connections, which the
   #     autoscaling policy reads as PowerSync/powersync_concurrent_connections.
   # relabel_configs stamp cluster / powersync_role / ClusterName onto every series.
-  # The awsemf metric is emitted with BOTH the ClusterName dimension and no dimensions
+  # The awsemf metric is emitted with both the ClusterName dimension and no dimensions
   # ([["ClusterName"], []]) so it resolves whether the autoscaling policy queries the
   # metric with or without a dimension.
   otel_config = <<-EOT
@@ -167,7 +167,7 @@ locals {
       }
     }
     healthCheck = {
-      # The powersync-service image is node:slim — it has NO curl/wget. Use node's global
+      # The powersync-service image is node:slim; it has no curl/wget. Use node's global
       # fetch (node 22) for the probe; a curl-based check fails forever and cycles the task.
       command     = ["CMD-SHELL", "node -e 'fetch(\"http://localhost:8080/probes/liveness\").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))'"]
       interval    = 30
@@ -178,7 +178,7 @@ locals {
     stopTimeout = var.stop_timeout
   }
 
-  # Replication ADOT sidecar config — remote-write to AMP only. The replicator publishes no
+  # Replication ADOT sidecar config: remote-write to AMP only. The replicator publishes no
   # autoscaling metric, so there is no awsemf/CloudWatch path (unlike the api collector).
   # powersync_role=replication distinguishes its series (replication lag, storage sizes,
   # rows/transactions/chunks) from the api task's in AMP.
@@ -354,7 +354,7 @@ resource "aws_ecs_cluster_capacity_providers" "this" {
 }
 
 ###############################################################################
-# Replication task definition — single active replicator (start -r sync)
+# Replication task definition: single active replicator (start -r sync)
 ###############################################################################
 
 resource "aws_ecs_task_definition" "replication" {
@@ -373,7 +373,7 @@ resource "aws_ecs_task_definition" "replication" {
 }
 
 ###############################################################################
-# API task definition — API process (start -r api) + cw-agent sidecar
+# API task definition: API process (start -r api) + cw-agent sidecar
 ###############################################################################
 
 resource "aws_ecs_task_definition" "api" {
@@ -393,7 +393,7 @@ resource "aws_ecs_task_definition" "api" {
 }
 
 ###############################################################################
-# Compact task definition — scheduled bucket compaction (command: compact)
+# Compact task definition: scheduled bucket compaction (command: compact)
 ###############################################################################
 
 resource "aws_ecs_task_definition" "compact" {
@@ -430,7 +430,7 @@ resource "aws_ecs_task_definition" "compact" {
 }
 
 ###############################################################################
-# Replication service — desired 1, no LB. min_healthy=0/max=100 so the single
+# Replication service: desired 1, no LB. min_healthy=0/max=100 so the single
 # replicator (which holds the sync-rule lock) can be replaced. This causes a brief
 # replication gap on every deploy: the old task stops before the new one is healthy.
 ###############################################################################
@@ -453,7 +453,7 @@ resource "aws_ecs_service" "replication" {
 }
 
 ###############################################################################
-# API service — behind the ALB, zero-downtime rolling (min_healthy=100/max=200),
+# API service: behind the ALB, zero-downtime rolling (min_healthy=100/max=200),
 # autoscaler owns desired_count.
 ###############################################################################
 
@@ -487,7 +487,7 @@ resource "aws_ecs_service" "api" {
 }
 
 ###############################################################################
-# Autoscaling — CPU @ cpu_target and custom connections @ connection_target.
+# Autoscaling: CPU @ cpu_target and custom connections @ connection_target.
 # Scale-out goes to whichever policy demands more tasks; scale-in only when both agree.
 ###############################################################################
 
@@ -531,8 +531,8 @@ resource "aws_appautoscaling_policy" "connections" {
 
     # The cw-agent publishes powersync_concurrent_connections dimensioned only by
     # ClusterName (no per-task dimension). Statistic = Average therefore means
-    # "average connections per task" — Sum would be wrong by a factor of N (task count).
-    # The dimensions block MUST match the series the agent writes (ClusterName=<cluster>):
+    # "average connections per task"; Sum would be wrong by a factor of N (task count).
+    # The dimensions block must match the series the agent writes (ClusterName=<cluster>):
     # omitting it makes the target-tracking alarm watch a dimensionless series that never
     # has data, so the alarm sits in INSUFFICIENT_DATA and this policy never scales.
     customized_metric_specification {
@@ -549,7 +549,7 @@ resource "aws_appautoscaling_policy" "connections" {
 }
 
 ###############################################################################
-# Daily compact job — EventBridge RunTask in the private subnets.
+# Daily compact job: EventBridge RunTask in the private subnets.
 ###############################################################################
 
 resource "aws_cloudwatch_event_rule" "compact" {

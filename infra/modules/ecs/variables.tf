@@ -95,7 +95,7 @@ variable "log_lambda_function_name" {
   default     = ""
 }
 
-# Sizing — API
+# Sizing: API
 variable "api_cpu" {
   type = number
 }
@@ -108,7 +108,7 @@ variable "api_node_options" {
   type = string
 }
 
-# Sizing — replication
+# Sizing: replication
 variable "replication_cpu" {
   type = number
 }
@@ -121,7 +121,7 @@ variable "replication_node_options" {
   type = string
 }
 
-# Sizing — compact
+# Sizing: compact
 variable "compact_cpu" {
   type = number
 }

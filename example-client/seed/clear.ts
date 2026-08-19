@@ -21,7 +21,7 @@ await withTempAccess(async () => {
   try {
     const { rowCount } = await client.query(`SELECT 1 FROM information_schema.tables WHERE table_name = '${SOURCE_TABLE}'`);
     await client.query(`DROP TABLE IF EXISTS ${SOURCE_TABLE}`);
-    console.log(rowCount ? `✅ dropped ${SOURCE_TABLE}` : `ℹ️  ${SOURCE_TABLE} did not exist — nothing to drop`);
+    console.log(rowCount ? `✅ dropped ${SOURCE_TABLE}` : `ℹ️  ${SOURCE_TABLE} did not exist, nothing to drop`);
   } finally {
     await client.end();
   }

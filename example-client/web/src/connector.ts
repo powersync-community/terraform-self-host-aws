@@ -10,7 +10,7 @@ export const connector: PowerSyncBackendConnector = {
   async fetchCredentials() {
     if (!endpoint || !token) {
       throw new Error(
-        "Missing VITE_POWERSYNC_ENDPOINT / VITE_POWERSYNC_TOKEN — run `npm run token` in example-client/ first."
+        "Missing VITE_POWERSYNC_ENDPOINT / VITE_POWERSYNC_TOKEN. Run `npm run token` in example-client/ first."
       );
     }
     return { endpoint, token };

@@ -14,7 +14,7 @@ provider "grafana" {
   auth = local.enable_observability ? module.observability.grafana_auth_token : ""
 }
 
-# OpenSearch — used only for FGAC role mapping (log-indexer Lambda role -> write). Authenticated
+# OpenSearch, used only for FGAC role mapping (log-indexer Lambda role -> write). Authenticated
 # with the internal master user. url/creds are "" when enable_opensearch is false, in
 # which case no opensearch_* resources are created and the provider is never invoked.
 provider "opensearch" {

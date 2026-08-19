@@ -15,7 +15,7 @@ terraform {
       source  = "hashicorp/tls"
       version = "~> 4.0"
     }
-    # Community provider (v0.x, single maintainer) — computes a JWKS from a PEM key so the
+    # Community provider (v0.x, single maintainer). Computes a JWKS from a PEM key so the
     # ALB-served public key set is generated in-Terraform instead of a committed static file.
     jwks = {
       source  = "iwarapter/jwks"

@@ -20,7 +20,7 @@ resource "aws_internet_gateway" "this" {
 }
 
 ###############################################################################
-# Subnets — two public (ALB + NAT + RDS), two private (ECS tasks)
+# Subnets: two public (ALB + NAT + RDS), two private (ECS tasks)
 ###############################################################################
 
 resource "aws_subnet" "public" {
@@ -43,7 +43,7 @@ resource "aws_subnet" "private" {
 }
 
 ###############################################################################
-# NAT Gateway (single — demo default; use one per AZ for production HA) in the first public subnet
+# NAT Gateway (single, demo default; use one per AZ for production HA) in the first public subnet
 ###############################################################################
 
 resource "aws_eip" "nat" {
@@ -126,7 +126,7 @@ resource "aws_security_group" "alb" {
   tags = { Name = "${var.name_prefix}-alb-sg" }
 }
 
-# ECS tasks: app port from the ALB only. Prometheus (9090) is intentionally NOT opened —
+# ECS tasks: app port from the ALB only. Prometheus (9090) is intentionally not opened;
 # it is scraped over localhost inside the task. Egress is open so tasks can pull the public
 # container image and reach AWS APIs / the JWKS URL over the NAT gateway; the RDS database is
 # reached in-VPC (the RDS security group allows this SG on 5432).

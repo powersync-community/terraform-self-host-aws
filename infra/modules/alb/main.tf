@@ -44,10 +44,10 @@ resource "aws_lb" "this" {
   subnets            = var.public_subnet_ids
   security_groups    = [var.alb_sg_id]
 
-  # Long-lived sync websockets — raise well above the 60s default.
+  # Long-lived sync websockets: raise well above the 60s default.
   idle_timeout = var.idle_timeout
 
-  # Demo: keep destroy frictionless. Enable deletion protection for production.
+  # Demo: no deletion protection so destroy is immediate. Enable it for production.
   enable_deletion_protection = false
 }
 
@@ -89,10 +89,10 @@ resource "aws_lb_listener" "https" {
 }
 
 ###############################################################################
-# Static JWKS — served directly off the ALB at /api/auth/keys (fixed-response).
+# Static JWKS: served directly off the ALB at /api/auth/keys (fixed-response).
 # Body is the public RS256 JWK generated in-Terraform (auth.tf, via the jwks provider); the
 # matching private key lives in Secrets Manager and example-client mints client JWTs locally.
-# PowerSync fetches this URL as its jwks_uri. The JWKS is ~435 bytes — the ALB caps fixed-response
+# PowerSync fetches this URL as its jwks_uri. The JWKS is ~435 bytes; the ALB caps fixed-response
 # bodies at 1024, so only one key fits; rotating the key means re-running apply.
 ###############################################################################
 

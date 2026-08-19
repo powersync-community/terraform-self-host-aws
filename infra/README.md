@@ -1,12 +1,11 @@
-# Hosting PowerSync on AWS ECS — Terraform
+# PowerSync on AWS ECS (Terraform)
 
-Provisions a complete self-hosted PowerSync deployment on AWS ECS Fargate with Amazon RDS for
-PostgreSQL as both the source database and the sync bucket storage. Everything — the VPC, the RDS
-instance, the ECS services, the ALB + TLS, and the client-auth signing key — is created by a single
-`terraform apply`.
+Provisions a self-hosted PowerSync deployment on AWS ECS Fargate with Amazon RDS for PostgreSQL as
+both the source database and the sync bucket storage. One `terraform apply` builds the VPC, the RDS
+instance, the ECS services, the ALB and TLS, and the client-auth signing key.
 
-Every resource is prefixed by `var.deployment_name`, so multiple independent deployments can coexist
-in the same AWS account and region.
+`var.deployment_name` prefixes every resource, so multiple deployments coexist in one AWS account and
+region.
 
 ## Module layout
 
@@ -24,71 +23,68 @@ infra/
     iam/            # execution / task / events roles (optional permissions boundary)
     ecs/            # cluster, task defs (replication / api / compact), services, autoscaling, schedule
     observability/  # (optional) AMP, Grafana, OpenSearch log pipeline, SNS + alert forwarder
-    atlas-cluster/  # OPTIONAL worked example: MongoDB Atlas instead of RDS (commented out in main.tf)
+    atlas-cluster/  # optional worked example: MongoDB Atlas instead of RDS (commented out in main.tf)
   auth.tf           # TF-generated RS256 JWT key -> Secrets Manager + the ALB-served JWKS
-  database.tf       # Postgres bootstrap: least-privilege roles, publication, storage database, grants
+  database.tf       # generated passwords for the two least-privilege Postgres roles
 ```
 
-## What `apply` creates
+## What apply creates
 
-Roughly in dependency order:
+In dependency order:
 
-- **Network** — VPC (`10.20.0.0/16`), 2 public + 2 private subnets, IGW, NAT, security groups.
-- **RDS** — one PostgreSQL instance with `rds.logical_replication = 1`, hosting the source database
-  (`app`) and, after the bootstrap, the bucket-storage database (`powersync`). Publicly accessible
-  (demo convenience) but locked to the ECS tasks and `var.admin_cidr` by its security group.
-- **Database role passwords** (`database.tf`) — Terraform generates the two role passwords and bakes
-  them into the config secret. The roles themselves, the `powersync` publication, the storage
-  database, and the source-read grants are created **after apply** by a one-time script
-  (`example-client`'s `npm run bootstrap`) — not by Terraform (see [Database bootstrap](#database-bootstrap)).
-- **ALB** — a DNS-validated ACM certificate, the ALB, target group, HTTPS listener, a Route 53 alias
+- **Network:** VPC (`10.20.0.0/16`), 2 public + 2 private subnets, IGW, NAT, security groups.
+- **RDS:** one PostgreSQL instance with `rds.logical_replication = 1`, holding the source database
+  (`app`) and, after the bootstrap, the bucket-storage database (`powersync`). It is publicly
+  accessible for the demo, with its security group limiting access to the ECS tasks and `var.admin_cidr`.
+- **ALB:** a DNS-validated ACM certificate, the ALB, target group, HTTPS listener, a Route 53 alias
   at `<deployment_name>.<base_domain>`, and a fixed-response rule serving the JWKS at `/api/auth/keys`.
-- **ECS** — the cluster, three task definitions (replication / api / compact), the replication and
-  api services, autoscaling policies, and the scheduled compaction rule.
-- **Secrets / config** — the config secrets, the cw-agent SSM parameter, and the generated JWT key.
-- **IAM** — execution / task / events roles (optionally with a permissions boundary).
+- **ECS:** the cluster, three task definitions (replication / api / compact), the replication and api
+  services, autoscaling policies, and the scheduled compaction rule.
+- **Secrets:** the config secrets, the cw-agent SSM parameter, and the generated JWT key.
+- **IAM:** execution / task / events roles, with an optional permissions boundary.
 
-**End state:** the api service is healthy behind the ALB and the replicator is connected — but the
-source database is empty, so nothing syncs until you seed it (see [`../example-client`](../example-client)).
+`terraform apply` does not create the PowerSync database roles, publication, or storage database. A
+one-time script does that (see [Database bootstrap](#database-bootstrap)). After apply, the api service
+sits behind the ALB and the replicator connects once you run the bootstrap and seed the source
+database (see [`../example-client`](../example-client)).
 
-**Cost:** this runs real, billable infrastructure (RDS, ALB, NAT gateway, Fargate tasks). Destroy
-when you're not using it.
+This runs billable infrastructure (RDS, ALB, NAT gateway, Fargate tasks). Destroy it when you are done.
 
 ## How it works
 
 ### Database (RDS Postgres)
-One RDS instance hosts two databases: `app` (your source data — the demo `lists` table) and
-`powersync` (PowerSync's bucket storage). Co-locating source and storage on one instance is
-supported on Postgres 14+ (it can raise CPU under load; split onto a second instance for production).
-The replicator consumes Postgres **logical replication** from the `powersync` publication.
+One RDS instance holds two databases: `app` (your source data, including the demo `lists` table) and
+`powersync` (PowerSync's bucket storage). Postgres 14+ supports co-locating the source and storage on
+one instance; it raises CPU under load, so split onto a second instance for production. The replicator
+consumes Postgres logical replication from the `powersync` publication.
 
-Two least-privilege roles (created in `database.tf`) keep connections scoped:
+Two least-privilege roles keep the connections scoped (the bootstrap in `example-client` creates them):
 
 | Role | Scope | Used by |
 |---|---|---|
 | `powersync_source` | `SELECT` on the source db + `rds_replication` | the source/replication connection (read-only) |
 | `powersync_storage` | owner of the `powersync` storage db | the bucket-storage connection (replication + compact + api) |
 
-The RDS master user is used only for the one-time bootstrap and by the seed scripts.
+The RDS master user handles the one-time bootstrap and the seed scripts.
 
 ### ECS processes
 | Service | Command | Role |
 |---|---|---|
-| `replication` | `start -r sync` | the replicator — reads the source, writes bucket data. Single active instance (`desired_count = 1`). |
-| `api` | `start -r api` | client-facing sync API behind the ALB. Autoscales 2→8 on CPU and concurrent-connection metrics. |
+| `replication` | `start -r sync` | reads the source, writes bucket data. Single active instance (`desired_count = 1`). |
+| `api` | `start -r api` | client-facing sync API behind the ALB. Autoscales 2 to 8 on CPU and concurrent connections. |
 | `compact` | `compact` | scheduled bucket compaction (daily, 02:00 UTC) via EventBridge. |
 
-The image is the official public `journeyapps/powersync-service`, pulled over the NAT gateway.
+Tasks run the public `journeyapps/powersync-service` image, pulled over the NAT gateway.
 
 ### Client auth
-The RS256 signing key is generated by Terraform (`auth.tf`): the private key is stored in Secrets
-Manager and the public half is published as the JWKS the ALB serves at `/api/auth/keys` (PowerSync's
-`jwks_uri`). PowerSync only *validates* tokens; **minting** is done locally by the companion toolkit —
-there is no deployed auth backend. Accepted audiences: `powersync-dev`, `authenticated`.
+Terraform generates the RS256 signing key in `auth.tf`: the private key goes to Secrets Manager, and
+the public half becomes the JWKS the ALB serves at `/api/auth/keys` (PowerSync's `jwks_uri`).
+PowerSync validates tokens; the companion toolkit mints them locally, so this example deploys no auth
+backend. Accepted audiences: `powersync-dev`, `authenticated`.
 
 ## Observability (optional)
 
-A monitoring stack gated by two flags in `locals.tf` — leave them off and none of it is created:
+Two flags in `locals.tf` gate the monitoring stack. Leave them off and none of it is created:
 
 ```hcl
 enable_observability = true   # AMP metrics, Grafana dashboards, alerts
@@ -97,18 +93,18 @@ enable_opensearch    = true   # + OpenSearch full-text log search (the main alwa
 
 You get Amazon Managed Prometheus (metrics via an ADOT sidecar), Amazon Managed Grafana (dashboards),
 an optional OpenSearch log pipeline, and CloudWatch + AMP alerts fanned through SNS to a forwarder
-Lambda (durable log, optionally Slack/webhook). OpenSearch is the only meaningful always-on cost;
-set `enable_opensearch = false` to keep metrics + dashboards at near-zero extra cost.
+Lambda (durable log, optional Slack/webhook). OpenSearch carries the only meaningful always-on cost;
+set `enable_opensearch = false` to keep metrics and dashboards at near-zero extra cost.
 
 ## Prerequisites
 
-1. **AWS account + credentials** that resolve to `account_id` (a guard aborts otherwise).
-2. **S3 state bucket** — set as the `backend "s3"` bucket in `versions.tf` (bootstrap it out-of-band).
-   Terraform ≥ 1.10 for native S3 locking.
-3. **Route 53 hosted zone** for `base_domain` — Terraform requests the ACM cert, writes the
-   validation records, and creates the `<deployment_name>.<base_domain>` alias.
-4. **Node ≥ 20** (the one-time DB bootstrap and the example client run from `example-client`), and
-   network reachability to RDS (set `admin_cidr` to your workstation IP).
+1. **AWS credentials** that resolve to `account_id` (a guard aborts otherwise).
+2. **S3 state bucket** set in `versions.tf` (bootstrap it out of band). Terraform 1.10+ for native S3
+   locking.
+3. **Route 53 hosted zone** for `base_domain`. Terraform requests the ACM cert, writes the validation
+   records, and creates the `<deployment_name>.<base_domain>` alias.
+4. **Node 20+** (the bootstrap and example client run from `example-client`), and network reachability
+   to RDS (set `admin_cidr` to your workstation IP).
 
 ## Setup
 
@@ -116,13 +112,13 @@ set `enable_opensearch = false` to keep metrics + dashboards at near-zero extra 
 cp ../.env.example ../.env   # fill in, then load it (direnv, or `set -a; source ../.env; set +a`)
 ```
 
-Required vars: `account_id`, `base_domain`, `route53_zone_id`. Recommended: `admin_cidr`
-(your IP) and `deployment_name`.
+Set `account_id`, `base_domain`, and `route53_zone_id`. Set `admin_cidr` to your IP and pick a
+`deployment_name`.
 
 ## Apply
 
-The `bucket` is set in `versions.tf`; pass the per-deployment state `key` at init (see the backend
-note in `versions.tf`):
+The `bucket` lives in `versions.tf`; pass the per-deployment state `key` at init (see the backend note
+in `versions.tf`):
 
 ```bash
 terraform init -backend-config="key=$TF_VAR_deployment_name/infra/terraform.tfstate"
@@ -132,17 +128,18 @@ terraform apply        # network, RDS, ECS, ALB
 
 ## Database bootstrap
 
-After apply, create PowerSync's Postgres roles, publication, and storage database once:
+After apply, run the one-time bootstrap to create PowerSync's Postgres roles, publication, and storage
+database:
 
 ```bash
 cd ../example-client && npm install
 npm run bootstrap
 ```
 
-This runs from the companion toolkit (Node + the `pg` driver — no `psql`), reads the endpoint and
-the Terraform-generated role passwords from `terraform output`, and temporarily allowlists your IP
-on the RDS security group. It is idempotent. Until it runs, the ECS services keep retrying their
-database connection; once it completes they become healthy and replication begins.
+It runs from the companion toolkit (Node and the `pg` driver), reads the endpoint and the generated
+role passwords from `terraform output`, and temporarily allowlists your IP on the RDS security group.
+It is idempotent. The ECS services retry their database connection until it completes, then go healthy
+and begin replication.
 
 ## Verify
 
@@ -157,18 +154,18 @@ Then seed and run a client per [`../example-client/README.md`](../example-client
 
 ## Running multiple deployments
 
-Every named resource is prefixed by `deployment_name`, and RDS has no cross-deployment constraints,
-so a second copy in the same account/region is just a second `deployment_name` + its own state key:
+Every named resource carries the `deployment_name` prefix, and RDS has no cross-deployment
+constraints, so a second copy in the same account and region needs a second `deployment_name` and its
+own state key:
 
 ```bash
 TF_VAR_deployment_name=staging terraform init -reconfigure \
-  -backend-config="bucket=<your-tf-state-bucket>" \
   -backend-config="key=staging/infra/terraform.tfstate"
 TF_VAR_deployment_name=staging terraform apply
 ```
 
-Keep `deployment_name` short (≤ ~20 chars) so derived names stay within AWS limits (ALB/target-group
-≤ 32, OpenSearch domain ≤ 28).
+Keep `deployment_name` short (under about 20 chars) so derived names stay within AWS limits
+(ALB/target-group 32, OpenSearch domain 28).
 
 ## Destroy
 
@@ -177,14 +174,14 @@ terraform destroy
 ```
 
 The RDS instance skips its final snapshot and secrets use a 0-day recovery window, so teardown is
-frictionless (demo defaults — harden both for production).
+quick. Both are demo defaults; harden them for production.
 
 ## Using MongoDB Atlas instead of RDS
 
-`modules/atlas-cluster` is a complete worked example of using MongoDB Atlas (over AWS PrivateLink) as
-the data layer. The commented block in `main.tf` shows how to wire it, and notes the one caveat:
-Atlas permits a single PrivateLink service per region/project, so the `deployment_name` prefix does
-**not** give you isolated multi-deployment on Atlas the way RDS does.
+`modules/atlas-cluster` is a worked example of using MongoDB Atlas over AWS PrivateLink as the data
+layer. The commented block in `main.tf` shows how to wire it. One caveat: Atlas permits a single
+PrivateLink service per region and project, so on Atlas the `deployment_name` prefix does not isolate
+multiple deployments the way RDS does.
 
 ## AI disclaimer
 

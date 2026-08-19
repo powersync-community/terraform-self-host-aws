@@ -11,7 +11,7 @@ terraform {
   }
 }
 
-# Master password — generated, never committed. special=false avoids URL-encoding headaches when
+# Master password, generated and never committed. special=false avoids URL-encoding headaches when
 # the value is spliced into connection strings.
 resource "random_password" "master" {
   length  = 32
@@ -25,7 +25,7 @@ resource "aws_db_subnet_group" "this" {
 }
 
 # Enable Postgres logical replication (what PowerSync's replicator consumes). This is a static
-# parameter, so it applies on (re)boot — a freshly created instance comes up with it already set.
+# parameter, so it applies on (re)boot; a freshly created instance comes up with it already set.
 resource "aws_db_parameter_group" "this" {
   name   = "${var.name_prefix}-pg${var.engine_version}"
   family = "postgres${var.engine_version}"
@@ -98,7 +98,7 @@ resource "aws_db_instance" "this" {
   publicly_accessible     = true # demo: lets the example client seed from a laptop. Set false + private subnets for production.
   backup_retention_period = 1
 
-  # Demo: keep teardown frictionless. For production, enable deletion protection and a final snapshot.
+  # Demo: skips the final snapshot and deletion protection so teardown is immediate. Enable both for production.
   skip_final_snapshot = true
   deletion_protection = false
   apply_immediately   = true

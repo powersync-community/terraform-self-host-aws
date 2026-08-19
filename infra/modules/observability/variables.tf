@@ -60,7 +60,7 @@ variable "alert_destination" {
 }
 
 variable "alert_webhook_url" {
-  description = "Incoming webhook URL for alert forwarding (Slack or generic). Stored in Secrets Manager, never in code — supply via TF_VAR_alert_webhook_url. Required when alert_destination is slack or webhook."
+  description = "Incoming webhook URL for alert forwarding (Slack or generic). Stored in Secrets Manager, never in code, supply via TF_VAR_alert_webhook_url. Required when alert_destination is slack or webhook."
   type        = string
   default     = ""
   sensitive   = true

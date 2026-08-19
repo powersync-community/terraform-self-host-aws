@@ -15,7 +15,7 @@ import { tfOutput } from "../lib/tf-outputs.ts";
 const secretArn = tfOutput("jwt_signing_key_secret_arn");
 const kid = tfOutput("jwt_signing_kid");
 const audience = tfOutput("jwt_audience");
-const endpoint = tfOutput("domain_url"); // https://<domain> — the PowerSync ALB
+const endpoint = tfOutput("domain_url"); // https://<domain>, the PowerSync ALB
 
 const region = secretArn.split(":")[3];
 const sm = new SecretsManagerClient({ region });

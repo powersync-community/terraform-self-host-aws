@@ -11,7 +11,7 @@ import { withTempAccess } from "./lib/rds-allowlist.ts";
 import { clientConfig, connectWithRetry, SOURCE_TABLE } from "./lib/pg.ts";
 
 const DEMO_USER = "example-user"; // must match the JWT `sub` minted in auth/mint-token.ts
-const OTHER_USER = "someone-else"; // rows that must NOT sync to the demo user
+const OTHER_USER = "someone-else"; // rows that must not sync to the demo user
 
 // The source role is SELECT-only, so seeding connects as the RDS master user (admin).
 function adminConfig() {
@@ -40,7 +40,7 @@ await withTempAccess(async () => {
         created_at timestamptz NOT NULL DEFAULT now()
       )
     `);
-    // Grant the source (replication) role read access to this table — needed if the table was
+    // Grant the source (replication) role read access to this table, needed if the table was
     // created after the initial bootstrap grants. Idempotent.
     await client.query(`GRANT SELECT ON ${SOURCE_TABLE} TO ${tfOutput("db_source_username")}`);
 

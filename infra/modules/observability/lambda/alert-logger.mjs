@@ -28,7 +28,7 @@
 //                           link for metric (AMP) alerts (optional)
 //
 // Dependencies: Node built-ins + the AWS SDK v3 that ships in the Lambda runtime
-// (no bundling / build step — archive_file zips this file as-is).
+// (no bundling / build step; archive_file zips this file as-is).
 
 import https from "node:https";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
@@ -36,12 +36,12 @@ import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-sec
 // Explicit, human-facing titles for the infra alarms. Falls back to a derived
 // "PowerSync <name>" for anything not listed.
 const CW_TITLES = {
-  "powersync-api-no-healthy-hosts": "PowerSync API — no healthy hosts",
-  "powersync-api-target-5xx": "PowerSync API — 5xx errors",
-  "powersync-api-cpu-high": "PowerSync API — high CPU",
-  "powersync-compaction-launch-failed": "PowerSync — compaction failed to launch",
-  "powersync-opensearch-cluster-red": "PowerSync OpenSearch — cluster red",
-  "powersync-opensearch-low-storage": "PowerSync OpenSearch — low storage",
+  "powersync-api-no-healthy-hosts": "PowerSync API: no healthy hosts",
+  "powersync-api-target-5xx": "PowerSync API: 5xx errors",
+  "powersync-api-cpu-high": "PowerSync API: high CPU",
+  "powersync-compaction-launch-failed": "PowerSync: compaction failed to launch",
+  "powersync-opensearch-cluster-red": "PowerSync OpenSearch: cluster red",
+  "powersync-opensearch-low-storage": "PowerSync OpenSearch: low storage",
 };
 
 const STATE = { FIRING: "FIRING", RESOLVED: "RESOLVED", NODATA: "NO DATA" };
@@ -235,7 +235,7 @@ export const handler = async (event) => {
   for (const rec of event.Records || []) {
     const sns = rec.Sns || {};
     for (const m of normalize(sns)) {
-      // Durable record — always, regardless of destination.
+      // Durable record, always, regardless of destination.
       console.log(JSON.stringify({ level: m.state === STATE.RESOLVED ? "info" : "warn", source: "powersync-alerts", ...m }));
       alerts.push(m);
     }

@@ -3,7 +3,7 @@ import { Client, type ClientConfig } from "pg";
 // The source application database, and the demo table PowerSync syncs.
 export const SOURCE_TABLE = "lists";
 
-// Build a pg connection config from Terraform outputs. TLS is enabled but not CA-verified — this
+// Build a pg connection config from Terraform outputs. TLS is enabled but not CA-verified. This
 // is a local admin script talking to the (demo) publicly-accessible RDS instance; the sync path
 // itself never touches the DB directly.
 export function clientConfig(opts: {

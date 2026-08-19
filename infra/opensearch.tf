@@ -24,7 +24,7 @@ resource "opensearch_roles_mapping" "log_indexer" {
 }
 
 ###############################################################################
-# OpenSearch Dashboards saved objects — created in the Global tenant (.kibana)
+# OpenSearch Dashboards saved objects, created in the Global tenant (.kibana)
 # so Dashboards/Discover works out of the box with no manual click:
 #   - the powersync-logs-* index pattern (time field @timestamp)
 #   - a default "PowerSync logs" search with useful columns

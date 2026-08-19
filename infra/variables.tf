@@ -1,6 +1,6 @@
 ###############################################################################
 # Inputs. Secret / account-identifying values are marked sensitive and are meant
-# to be supplied via TF_VAR_* env vars (see ../.env.example) — none carries a
+# to be supplied via TF_VAR_* env vars (see ../.env.example). None carries a
 # committed secret default. Everything else (sizing, CIDRs, timeouts, schedules)
 # is hard-coded in locals.tf or inline at the call site in main.tf.
 ###############################################################################
@@ -38,7 +38,7 @@ variable "route53_zone_id" {
 
 variable "admin_cidr" {
   description = <<-EOT
-    CIDR blocks allowed to reach the RDS instance on 5432 in addition to the ECS tasks — e.g.
+    CIDR blocks allowed to reach the RDS instance on 5432 in addition to the ECS tasks, e.g.
     your workstation IP as ["203.0.113.4/32"] for seeding and running the example client locally.
     Leave empty to allow only in-VPC access (then seed via a bastion/SSM tunnel).
   EOT

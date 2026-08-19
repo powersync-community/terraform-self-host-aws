@@ -31,7 +31,7 @@ locals {
   # case). Set var.iam_permissions_boundary only if your account requires one.
   iam_permissions_boundary_arn = var.iam_permissions_boundary == "" ? null : "arn:aws:iam::${var.account_id}:policy/${var.iam_permissions_boundary}"
 
-  # Full image reference shared by all three task definitions — the official public PowerSync
+  # Full image reference shared by all three task definitions. The official public PowerSync
   # service image, pulled directly (no per-account ECR mirror needed).
   image = "journeyapps/powersync-service:1.22.0"
 
@@ -44,7 +44,7 @@ locals {
   compact_cpu        = 1024
   compact_memory     = 2048
 
-  # Prometheus telemetry port — scraped by the sidecar and written into the rendered service.yaml.
+  # Prometheus telemetry port, scraped by the sidecar and written into the rendered service.yaml.
   # Stays internal to the task; never on a security group or the ALB.
   prometheus_port = 9090
 
@@ -65,7 +65,7 @@ locals {
   config_api_secret_prefix_arn = "arn:aws:secretsmanager:${local.region}:${var.account_id}:secret:${local.config_api_secret_name}"
   cwagent_param_arn            = "arn:aws:ssm:${local.region}:${var.account_id}:parameter${local.cwagent_param_name}"
 
-  # NODE_OPTIONS — use the ABSOLUTE --max-old-space-size (MiB). floor(mem*0.8) leaves headroom for
+  # NODE_OPTIONS uses the absolute --max-old-space-size (MiB). floor(mem*0.8) leaves headroom for
   # the runtime and sidecars while giving Node most of the task memory.
   api_node_options         = "--max-old-space-size=${floor(local.api_memory * 0.8)}"
   replication_node_options = "--max-old-space-size=${floor(local.replication_memory * 0.8)}"
@@ -86,7 +86,7 @@ locals {
   source_uri  = "postgresql://${local.source_role}:${random_password.pg_source.result}@${local.pg_host}:${local.pg_port}/${local.source_db}?sslmode=verify-full"
   storage_uri = "postgresql://${local.storage_role}:${random_password.pg_storage.result}@${local.pg_host}:${local.pg_port}/${local.storage_db}?sslmode=verify-full"
 
-  # JWKS endpoint PowerSync validates client tokens against — served by our own ALB (auth.tf
+  # JWKS endpoint PowerSync validates client tokens against, served by the ALB (auth.tf
   # generates the keys; the ALB serves them at /api/auth/keys). Derived from the domain.
   jwks_uri = "https://${local.domain}/api/auth/keys"
 
@@ -120,7 +120,7 @@ locals {
 
   # The api task uses a separate secret purely so the two-secret plumbing stays in place; on
   # Postgres we use a single storage role, so the api config is identical to the main config.
-  # (The Atlas example uses this seam for a stricter storage-api user — see modules/atlas-cluster.)
+  # (The Atlas example uses this seam for a stricter storage-api user; see modules/atlas-cluster.)
   config_api_b64 = local.config_b64
 
   # cw-agent EMF config (publishes powersync_concurrent_connections to the PowerSync namespace,

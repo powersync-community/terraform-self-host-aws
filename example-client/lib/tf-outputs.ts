@@ -1,4 +1,4 @@
-// Reads live values from the infra Terraform state so nothing here is hardcoded — survives
+// Reads live values from the infra Terraform state so nothing here is hardcoded; survives
 // destroy/apply (new db password, new standard_srv host, regenerated signing key, etc.).
 import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
@@ -29,6 +29,6 @@ function load(): Record<string, unknown> {
 
 export function tfOutput(name: string): string {
   const v = load()[name];
-  if (v == null) throw new Error(`terraform output "${name}" is missing — has infra been applied?`);
+  if (v == null) throw new Error(`terraform output "${name}" is missing. Has infra been applied?`);
   return String(v);
 }

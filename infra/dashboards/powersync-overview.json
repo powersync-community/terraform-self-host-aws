@@ -1,5 +1,5 @@
 {
-  "title": "PowerSync — Self-Hosted Overview",
+  "title": "PowerSync: Self-Hosted Overview",
   "uid": "powersync-self-hosted-overview",
   "tags": [
     "powersync",
@@ -212,7 +212,7 @@
           "expr": "max(powersync_replication_lag_seconds{cluster=~\"$cluster\"})"
         }
       ],
-      "description": "Current replication lag — how far behind the source database the replicator is. Green <30s, amber 30–60s, red >60s. The single most important sync-health signal."
+      "description": "Current replication lag, how far behind the source database the replicator is. Green <30s, amber 30–60s, red >60s. The single most important sync-health signal."
     },
     {
       "type": "stat",
@@ -401,7 +401,7 @@
           "expr": "sum(rate(powersync_operations_synced_total{cluster=~\"$cluster\"}[5m]))"
         }
       ],
-      "description": "Rate of sync operations sent to clients (rate of powersync_operations_synced_total). 'No data' at idle is normal — it means no client traffic."
+      "description": "Rate of sync operations sent to clients (rate of powersync_operations_synced_total). 'No data' at idle is normal, it means no client traffic."
     },
     {
       "type": "stat",
@@ -458,7 +458,7 @@
           "metricEditorMode": 0
         }
       ],
-      "description": "ALB target 5xx responses — server-side errors reaching clients. Should stay at 0."
+      "description": "ALB target 5xx responses, server-side errors reaching clients. Should stay at 0."
     },
     {
       "type": "row",
@@ -638,7 +638,7 @@
           "statsGroups": []
         }
       ],
-      "description": "Count of 'Starting Replication Engine' log lines — each marks a replicator (re)start. Frequent restarts indicate crash-looping."
+      "description": "Count of 'Starting Replication Engine' log lines, each marks a replicator (re)start. Frequent restarts indicate crash-looping."
     },
     {
       "type": "row",
@@ -844,7 +844,7 @@
           "legendFormat": "ops/row"
         }
       ],
-      "description": "Operations synced ÷ rows replicated (recording rule). High fan-out means one source row reaches many clients/buckets — often over-broad sync rules."
+      "description": "Operations synced ÷ rows replicated (recording rule). High fan-out means one source row reaches many clients/buckets, often over-broad sync rules."
     },
     {
       "type": "row",
@@ -1308,7 +1308,7 @@
         "x": 6,
         "y": 66
       },
-      "description": "EventBridge FailedInvocations for the compact rule — the task failed to LAUNCH (no app logs are produced in that case). >0 means scheduled compaction is broken.",
+      "description": "EventBridge FailedInvocations for the compact rule, the task failed to LAUNCH (no app logs are produced in that case). >0 means scheduled compaction is broken.",
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -1431,7 +1431,7 @@
           "statsGroups": []
         }
       ],
-      "description": "Raw compact task logs — the 'Performing / Successfully / Failed to compact' lines."
+      "description": "Raw compact task logs, the 'Performing / Successfully / Failed to compact' lines."
     },
     {
       "type": "row",
@@ -1559,7 +1559,7 @@
         "x": 8,
         "y": 81
       },
-      "description": "API auth failures — auth-related terms inside warn/error/fatal log bodies only (guarded to avoid matching numeric substrings like 401 inside op-ids).",
+      "description": "API auth failures, auth-related terms inside warn/error/fatal log bodies only (guarded to avoid matching numeric substrings like 401 inside op-ids).",
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -1609,7 +1609,7 @@
         "x": 16,
         "y": 81
       },
-      "description": "API log lines containing a PSYNC_* code (the code is in the message text — open the log panel or Discover for the specific code).",
+      "description": "API log lines containing a PSYNC_* code (the code is in the message text, open the log panel or Discover for the specific code).",
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -1793,7 +1793,7 @@
           ]
         }
       ],
-      "description": "Occurrences of slot / LSN / snapshot / ECONNRESET / timeout in replicator logs — early indicators of replication trouble (slot invalidation, change-stream timeouts, connection resets)."
+      "description": "Occurrences of slot / LSN / snapshot / ECONNRESET / timeout in replicator logs, early indicators of replication trouble (slot invalidation, change-stream timeouts, connection resets)."
     },
     {
       "type": "row",
@@ -1821,7 +1821,7 @@
         "x": 0,
         "y": 98
       },
-      "description": "Live API log lines (both API tasks — distinguish by log_stream), newest first. Level is controlled by the $level dropdown; refine further with the query bar.",
+      "description": "Live API log lines (both API tasks, distinguish by log_stream), newest first. Level is controlled by the $level dropdown; refine further with the query bar.",
       "options": {
         "showTime": true,
         "wrapLogMessage": true,

@@ -45,13 +45,13 @@ variable "source_database" {
 }
 
 variable "api_role_name" {
-  description = "Name of the custom least-privilege API storage role. Custom roles are PROJECT-scoped, so a second instance of this module in the same project must pass a distinct name to avoid a collision."
+  description = "Name of the custom least-privilege API storage role. Custom roles are project-scoped, so a second instance of this module in the same project must pass a distinct name to avoid a collision."
   type        = string
   default     = "powersyncApiStorage"
 }
 
 variable "create_private_endpoint" {
-  description = "Whether this instance creates the Atlas PrivateLink endpoint service + AWS interface endpoint. Atlas permits only ONE private endpoint service per region per project, and a single regional endpoint already serves EVERY cluster in that region. So the first instance creates it (true); a second cluster in the same region must reuse it (false) and pass existing_vpc_endpoint_id."
+  description = "Whether this instance creates the Atlas PrivateLink endpoint service + AWS interface endpoint. Atlas permits only one private endpoint service per region per project, and a single regional endpoint already serves every cluster in that region. So the first instance creates it (true); a second cluster in the same region must reuse it (false) and pass existing_vpc_endpoint_id."
   type        = bool
   default     = true
 }
@@ -73,6 +73,6 @@ variable "private_subnet_ids" {
 }
 
 variable "endpoint_sg_id" {
-  description = "Security group for the Atlas interface endpoint (from the network module — accepts the Mongo port range from the ECS tasks)."
+  description = "Security group for the Atlas interface endpoint (from the network module, accepts the Mongo port range from the ECS tasks)."
   type        = string
 }

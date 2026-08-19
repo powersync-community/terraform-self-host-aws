@@ -1,7 +1,7 @@
 // Proves the source (replication) role is correctly least-privileged:
-//   1. It can READ the source data (SELECT on the `lists` table)  — replication needs this.
-//   2. It CANNOT write the source data (INSERT denied)            — replication only reads.
-//   3. It CANNOT reach the bucket-storage database at all         — that's the storage role's job.
+//   1. reads the source data (SELECT on lists): replication needs this.
+//   2. cannot write the source data (INSERT denied): replication only reads.
+//   3. cannot reach the bucket-storage database: the storage role handles that.
 // Connects AS the source role (creds from terraform outputs) and asserts each case.
 //
 //   npm run test:least-privilege
@@ -28,7 +28,7 @@ function isDenied(e: unknown): boolean {
 const results: { name: string; pass: boolean; detail: string }[] = [];
 function record(name: string, pass: boolean, detail: string) {
   results.push({ name, pass, detail });
-  console.log(`${pass ? "✅ PASS" : "❌ FAIL"}  ${name} — ${detail}`);
+  console.log(`${pass ? "✅ PASS" : "❌ FAIL"}  ${name}: ${detail}`);
 }
 
 await withTempAccess(async () => {
@@ -45,7 +45,7 @@ await withTempAccess(async () => {
     try {
       await src.query(`INSERT INTO ${SOURCE_TABLE} (owner_id, name) VALUES ('_probe', '_probe')`);
       await src.query(`DELETE FROM ${SOURCE_TABLE} WHERE owner_id = '_probe'`).catch(() => {});
-      record("write source lists (must be denied)", false, "INSERT SUCCEEDED — source role is over-privileged!");
+      record("write source lists (must be denied)", false, "INSERT succeeded: source role is over-privileged!");
     } catch (e) {
       record("write source lists (must be denied)", isDenied(e), isDenied(e) ? "correctly denied (SELECT-only)" : `denied but unexpected: ${(e as Error).message}`);
     }
@@ -53,16 +53,16 @@ await withTempAccess(async () => {
     await src.end();
   }
 
-  // 3: the source role must NOT be able to reach the bucket-storage database.
+  // 3: the source role must not be able to reach the bucket-storage database.
   try {
     const stg = await connectWithRetry(sourceConfig(tfOutput("db_storage_database")), 2, 2000);
     await stg.end();
-    record("reach storage db (must be denied)", false, "CONNECT SUCCEEDED — source role can reach bucket storage!");
+    record("reach storage db (must be denied)", false, "CONNECT succeeded: source role can reach bucket storage!");
   } catch (e) {
     record("reach storage db (must be denied)", isDenied(e), isDenied(e) ? "correctly denied (no access to storage db)" : `denied but unexpected: ${(e as Error).message}`);
   }
 });
 
 const failed = results.filter((r) => !r.pass);
-console.log(`\n${failed.length === 0 ? "🎉 all checks passed — least-privilege scoping verified" : `⚠️ ${failed.length} check(s) failed`}`);
+console.log(`\n${failed.length === 0 ? "🎉 all checks passed: least-privilege scoping verified" : `⚠️ ${failed.length} check(s) failed`}`);
 process.exit(failed.length === 0 ? 0 : 1);

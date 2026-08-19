@@ -31,11 +31,11 @@ client_auth:
 # Per-task (per api process) sync concurrency. The image defaults to max_concurrent_connections=200
 # and max_data_fetch_concurrency=10; we pin both so the ceilings are version-stable and the
 # autoscaling math in main.tf (connection_target) references a real number.
-#   max_concurrent_connections — HTTP sync-stream admission. Connection (limit+1) is rejected
+#   max_concurrent_connections: HTTP sync-stream admission. Connection (limit+1) is rejected
 #     instantly with 429 (no queueing). This is the "hard limit" the connection autoscaler targets.
-#   max_data_fetch_concurrency — concurrent bucket-data fetch slots. Connections past this wait on
-#     the semaphore up to 30s then error. Trades against task CPU/mem — raise alongside api sizing.
-# tokens — bearer tokens accepted by the admin/management API endpoints. Sourced from
+#   max_data_fetch_concurrency: concurrent bucket-data fetch slots. Connections past this wait on
+#     the semaphore up to 30s then error. Trades against task CPU/mem; raise alongside api sizing.
+# tokens: bearer tokens accepted by the admin/management API endpoints. Sourced from
 #   var.admin_api_token; renders [] when unset (admin API left with no valid token).
 api:
   tokens: ${jsonencode(api_tokens)}

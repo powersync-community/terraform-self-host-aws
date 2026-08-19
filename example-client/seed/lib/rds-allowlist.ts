@@ -1,7 +1,7 @@
 // Temporary RDS access for local scripts: authorize the runner's current public IP on the RDS
 // security group (5432), run the work, then revoke it. No hardcoded IP; anyone with AWS creds can
-// run it. (You can also set var.admin_cidr in Terraform to keep a static rule instead — then these
-// scripts still work and the temporary rule is just redundant.)
+// run it. (You can also set var.admin_cidr in Terraform to keep a static rule instead; then these
+// scripts still work and the temporary rule is redundant.)
 import {
   EC2Client,
   AuthorizeSecurityGroupIngressCommand,
@@ -38,7 +38,7 @@ export async function withTempAccess<T>(fn: () => Promise<T>): Promise<T> {
     await ec2.send(new AuthorizeSecurityGroupIngressCommand(rule));
     console.log(`🔓 temporarily allowlisted ${cidr} on ${groupId}`);
   } catch (e) {
-    // Rule already present (e.g. covered by var.admin_cidr, or a leftover) — fine, carry on.
+    // Rule already present (e.g. covered by var.admin_cidr, or a leftover); fine, carry on.
     if ((e as { name?: string }).name !== "InvalidPermission.Duplicate") throw e;
     console.log(`ℹ️  ${cidr} already allowed on ${groupId}`);
   }
@@ -50,7 +50,7 @@ export async function withTempAccess<T>(fn: () => Promise<T>): Promise<T> {
       await ec2.send(new RevokeSecurityGroupIngressCommand(rule));
       console.log(`🔒 removed temporary allowlist entry ${cidr}`);
     } catch (e) {
-      console.warn(`⚠️  could not revoke ${cidr} on ${groupId}: ${(e as Error).message} — remove it manually if needed`);
+      console.warn(`⚠️  could not revoke ${cidr} on ${groupId}: ${(e as Error).message}. Remove it manually if needed`);
     }
   }
 }

@@ -1,5 +1,5 @@
 // One-time database bootstrap: create the two least-privilege PowerSync roles, the `powersync`
-// publication, the bucket-storage database, and the source-read grants. Idempotent — safe to re-run.
+// publication, the bucket-storage database, and the source-read grants. Idempotent and safe to re-run.
 //
 // Run this once after `terraform apply` and before seeding / starting to sync. It reads everything
 // from terraform outputs (endpoint, master creds, and the Terraform-generated role passwords) and
@@ -76,7 +76,7 @@ await withTempAccess(async () => {
       console.log(`ℹ️  storage database "${storageDb}" already exists`);
     }
 
-    console.log(`\n🎉 bootstrap complete — you can now: npm run seed`);
+    console.log(`\n🎉 bootstrap complete. Next: npm run seed`);
   } finally {
     await c.end();
   }

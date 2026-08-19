@@ -134,31 +134,31 @@ resource "aws_prometheus_rule_group_namespace" "alerts" {
             for: 5m
             labels: { severity: critical }
             annotations:
-              title: "PowerSync — replicator down"
-              summary: "No replication_lag metric for 5m — replication may have stopped entirely."
+              title: "PowerSync: replicator down"
+              summary: "No replication_lag metric for 5m; replication may have stopped entirely."
           - alert: PowerSyncReplicationLagCritical
             expr: max(powersync_replication_lag_seconds) > 300
             for: 5m
             labels: { severity: critical }
             annotations:
-              title: "PowerSync — replication lag critical"
-              summary: "Replication is badly behind the source — clients are seeing stale data."
+              title: "PowerSync: replication lag critical"
+              summary: "Replication is badly behind the source; clients are seeing stale data."
               value: "{{ $value }}s"
           - alert: PowerSyncReplicationLagHigh
             expr: max(powersync_replication_lag_seconds) > 60
             for: 5m
             labels: { severity: warning }
             annotations:
-              title: "PowerSync — replication lag high"
-              summary: "Replication lag above 60s for 5m — clients drifting from the source."
+              title: "PowerSync: replication lag high"
+              summary: "Replication lag above 60s for 5m; clients drifting from the source."
               value: "{{ $value }}s"
           - alert: PowerSyncParameterStorageBloat
             expr: powersync:param_bloat:ratio > 0.5
             for: 30m
             labels: { severity: warning }
             annotations:
-              title: "PowerSync — parameter storage bloat"
-              summary: "Parameter storage exceeds 50% of data storage — precursor to checksum timeouts."
+              title: "PowerSync: parameter storage bloat"
+              summary: "Parameter storage exceeds 50% of data storage; precursor to checksum timeouts."
               value: "{{ $value }}"
   EOT
 }
@@ -221,7 +221,7 @@ resource "aws_cloudwatch_metric_alarm" "api_no_healthy_hosts" {
   threshold           = 1
   comparison_operator = "LessThanThreshold"
   treat_missing_data  = "breaching"
-  alarm_description   = "No healthy API targets behind the ALB — sync API unreachable."
+  alarm_description   = "No healthy API targets behind the ALB; sync API unreachable."
   alarm_actions       = [aws_sns_topic.alerts[0].arn]
   ok_actions          = [aws_sns_topic.alerts[0].arn]
 }
@@ -287,6 +287,6 @@ resource "aws_cloudwatch_metric_alarm" "opensearch_low_storage" {
   threshold           = 2048
   comparison_operator = "LessThanThreshold"
   treat_missing_data  = "notBreaching"
-  alarm_description   = "OpenSearch free storage < 2 GB (MB) — indices may soon block writes."
+  alarm_description   = "OpenSearch free storage < 2 GB (MB); indices may soon block writes."
   alarm_actions       = [aws_sns_topic.alerts[0].arn]
 }

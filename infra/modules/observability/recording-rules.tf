@@ -1,5 +1,5 @@
 ###############################################################################
-# AMP recording rules — materialize the derived signals once so dashboards and
+# AMP recording rules materialize the derived signals once so dashboards and
 # alerts reference the same named series (single source of truth). Names match the
 # series the dashboard panels query.
 ###############################################################################
