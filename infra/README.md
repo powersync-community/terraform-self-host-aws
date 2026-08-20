@@ -52,20 +52,11 @@ This runs billable infrastructure (RDS, ALB, NAT gateway, Fargate tasks). Destro
 
 ## How it works
 
-### Database (RDS Postgres)
-One RDS instance holds two databases: `app` (your source data, including the demo `lists` table) and
-`powersync` (PowerSync's bucket storage). Postgres 14+ supports co-locating the source and storage on
-one instance; it raises CPU under load, so split onto a second instance for production. The replicator
-consumes Postgres logical replication from the `powersync` publication.
-
-Two least-privilege roles keep the connections scoped (the bootstrap in `example-client` creates them):
-
-| Role | Scope | Used by |
-|---|---|---|
-| `powersync_source` | `SELECT` on the source db + `rds_replication` | the source/replication connection (read-only) |
-| `powersync_storage` | owner of the `powersync` storage db | the bucket-storage connection (replication + compact + api) |
-
-The RDS master user handles the one-time bootstrap and the seed scripts.
+### Database
+One RDS instance holds two databases: `app` (source data, including the demo `lists` table) and
+`powersync` (bucket storage). Two least-privilege roles keep the read-only source connection separate
+from the storage connection. Full detail, including the bootstrap and production hardening, is in
+[`../docs/database.md`](../docs/database.md).
 
 ### ECS processes
 | Service | Command | Role |
@@ -77,24 +68,26 @@ The RDS master user handles the one-time bootstrap and the seed scripts.
 Tasks run the public `journeyapps/powersync-service` image, pulled over the NAT gateway.
 
 ### Client auth
-Terraform generates the RS256 signing key in `auth.tf`: the private key goes to Secrets Manager, and
-the public half becomes the JWKS the ALB serves at `/api/auth/keys` (PowerSync's `jwks_uri`).
-PowerSync validates tokens; the companion toolkit mints them locally, so this example deploys no auth
-backend. Accepted audiences: `powersync-dev`, `authenticated`.
+Terraform generates an RS256 signing key; the ALB serves its public JWKS at `/api/auth/keys`, and the
+companion toolkit mints tokens locally (no deployed auth backend). See [`../docs/auth.md`](../docs/auth.md).
+
+### Networking
+A dedicated VPC keeps the ECS tasks private and exposes only the ALB. See
+[`../docs/networking.md`](../docs/networking.md).
 
 ## Observability (optional)
 
-Two flags in `locals.tf` gate the monitoring stack. Leave them off and none of it is created:
+An opt-in monitoring stack (Amazon Managed Prometheus, Managed Grafana, an OpenSearch log pipeline, and
+SNS-based alerts) is gated by two flags in `locals.tf`:
 
 ```hcl
 enable_observability = true   # AMP metrics, Grafana dashboards, alerts
-enable_opensearch    = true   # + OpenSearch full-text log search (the main always-on cost)
+enable_opensearch    = true   # + OpenSearch log search (the main always-on cost)
 ```
 
-You get Amazon Managed Prometheus (metrics via an ADOT sidecar), Amazon Managed Grafana (dashboards),
-an optional OpenSearch log pipeline, and CloudWatch + AMP alerts fanned through SNS to a forwarder
-Lambda (durable log, optional Slack/webhook). OpenSearch carries the only meaningful always-on cost;
-set `enable_opensearch = false` to keep metrics and dashboards at near-zero extra cost.
+OpenSearch is the only meaningful always-on cost. For the metrics, dashboards, alerts, cost knobs, and
+how to reach Grafana and OpenSearch, see
+[`modules/observability/README.md`](./modules/observability/README.md).
 
 ## Prerequisites
 

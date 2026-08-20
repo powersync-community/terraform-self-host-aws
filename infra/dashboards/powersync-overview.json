@@ -48,14 +48,6 @@
         "hide": 0
       },
       {
-        "name": "DS_OS",
-        "label": "OpenSearch",
-        "type": "datasource",
-        "query": "elasticsearch",
-        "current": {},
-        "hide": 0
-      },
-      {
         "name": "cluster",
         "label": "PowerSync cluster",
         "type": "query",
@@ -212,7 +204,7 @@
           "expr": "max(powersync_replication_lag_seconds{cluster=~\"$cluster\"})"
         }
       ],
-      "description": "Current replication lag, how far behind the source database the replicator is. Green <30s, amber 30–60s, red >60s. The single most important sync-health signal."
+      "description": "Current replication lag, how far behind the source database the replicator is. Green <30s, amber 30\u201360s, red >60s. The single most important sync-health signal."
     },
     {
       "type": "stat",
@@ -524,7 +516,7 @@
     },
     {
       "type": "timeseries",
-      "title": "Replicated / s (rows · transactions · chunks)",
+      "title": "Replicated / s (rows \u00b7 transactions \u00b7 chunks)",
       "id": 21,
       "datasource": {
         "type": "prometheus",
@@ -687,7 +679,7 @@
     },
     {
       "type": "timeseries",
-      "title": "Sync throughput (ops/s · bytes/s)",
+      "title": "Sync throughput (ops/s \u00b7 bytes/s)",
       "id": 31,
       "datasource": {
         "type": "prometheus",
@@ -778,7 +770,7 @@
           "legendFormat": "compression ratio"
         }
       ],
-      "description": "Bytes sent to clients ÷ uncompressed bytes synced (AMP recording rule). Lower is better wire compression."
+      "description": "Bytes sent to clients \u00f7 uncompressed bytes synced (AMP recording rule). Lower is better wire compression."
     },
     {
       "type": "timeseries",
@@ -844,7 +836,7 @@
           "legendFormat": "ops/row"
         }
       ],
-      "description": "Operations synced ÷ rows replicated (recording rule). High fan-out means one source row reaches many clients/buckets, often over-broad sync rules."
+      "description": "Operations synced \u00f7 rows replicated (recording rule). High fan-out means one source row reaches many clients/buckets, often over-broad sync rules."
     },
     {
       "type": "row",
@@ -952,7 +944,7 @@
           "legendFormat": "param / data"
         }
       ],
-      "description": "Parameter storage ÷ (replication + operation storage), a recording rule. A high or growing ratio precedes checksum timeouts (PSYNC_S2403)."
+      "description": "Parameter storage \u00f7 (replication + operation storage), a recording rule. A high or growing ratio precedes checksum timeouts (PSYNC_S2403)."
     },
     {
       "type": "row",
@@ -1446,356 +1438,6 @@
       "id": 7
     },
     {
-      "type": "timeseries",
-      "title": "[API] Error rate by level",
-      "id": 70,
-      "datasource": {
-        "type": "elasticsearch",
-        "uid": "${DS_OS}"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 0,
-        "y": 81
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "custom": {
-            "drawStyle": "bars",
-            "fillOpacity": 60,
-            "stacking": {
-              "mode": "normal"
-            }
-          }
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "alias": "warn",
-          "query": "log_group:\"/ecs/powersync-api\" AND level:warn",
-          "queryType": "lucene",
-          "timeField": "@timestamp",
-          "metrics": [
-            {
-              "type": "count",
-              "id": "1"
-            }
-          ],
-          "bucketAggs": [
-            {
-              "type": "date_histogram",
-              "field": "@timestamp",
-              "id": "2",
-              "settings": {
-                "interval": "auto"
-              }
-            }
-          ]
-        },
-        {
-          "refId": "B",
-          "alias": "error",
-          "query": "log_group:\"/ecs/powersync-api\" AND level:error",
-          "queryType": "lucene",
-          "timeField": "@timestamp",
-          "metrics": [
-            {
-              "type": "count",
-              "id": "1"
-            }
-          ],
-          "bucketAggs": [
-            {
-              "type": "date_histogram",
-              "field": "@timestamp",
-              "id": "2",
-              "settings": {
-                "interval": "auto"
-              }
-            }
-          ]
-        },
-        {
-          "refId": "C",
-          "alias": "fatal",
-          "query": "log_group:\"/ecs/powersync-api\" AND level:fatal",
-          "queryType": "lucene",
-          "timeField": "@timestamp",
-          "metrics": [
-            {
-              "type": "count",
-              "id": "1"
-            }
-          ],
-          "bucketAggs": [
-            {
-              "type": "date_histogram",
-              "field": "@timestamp",
-              "id": "2",
-              "settings": {
-                "interval": "auto"
-              }
-            }
-          ]
-        }
-      ],
-      "description": "API warn/error/fatal log volume over time (stacked by level). Flat or empty is healthy."
-    },
-    {
-      "type": "timeseries",
-      "title": "[API] Auth failures",
-      "id": 72,
-      "datasource": {
-        "type": "elasticsearch",
-        "uid": "${DS_OS}"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 81
-      },
-      "description": "API auth failures, auth-related terms inside warn/error/fatal log bodies only (guarded to avoid matching numeric substrings like 401 inside op-ids).",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "custom": {
-            "drawStyle": "bars",
-            "fillOpacity": 60
-          }
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "query": "log_group:\"/ecs/powersync-api\" AND level:(warn OR error OR fatal) AND message:(\"authorization\" OR \"jwt\" OR \"token\" OR \"audience\" OR \"jwks\" OR \"unauthorized\")",
-          "queryType": "lucene",
-          "timeField": "@timestamp",
-          "metrics": [
-            {
-              "type": "count",
-              "id": "1"
-            }
-          ],
-          "bucketAggs": [
-            {
-              "type": "date_histogram",
-              "field": "@timestamp",
-              "id": "2",
-              "settings": {
-                "interval": "auto"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "timeseries",
-      "title": "[API] PSYNC error codes",
-      "id": 71,
-      "datasource": {
-        "type": "elasticsearch",
-        "uid": "${DS_OS}"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 81
-      },
-      "description": "API log lines containing a PSYNC_* code (the code is in the message text, open the log panel or Discover for the specific code).",
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "custom": {
-            "drawStyle": "bars",
-            "fillOpacity": 60
-          }
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "query": "log_group:\"/ecs/powersync-api\" AND message:PSYNC_*",
-          "queryType": "lucene",
-          "timeField": "@timestamp",
-          "metrics": [
-            {
-              "type": "count",
-              "id": "1"
-            }
-          ],
-          "bucketAggs": [
-            {
-              "type": "date_histogram",
-              "field": "@timestamp",
-              "id": "2",
-              "settings": {
-                "interval": "auto"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "timeseries",
-      "title": "[Replicator] Error rate by level",
-      "id": 76,
-      "datasource": {
-        "type": "elasticsearch",
-        "uid": "${DS_OS}"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 89
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "custom": {
-            "drawStyle": "bars",
-            "fillOpacity": 60,
-            "stacking": {
-              "mode": "normal"
-            }
-          }
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "alias": "warn",
-          "query": "log_group:\"/ecs/powersync-replication\" AND level:warn",
-          "queryType": "lucene",
-          "timeField": "@timestamp",
-          "metrics": [
-            {
-              "type": "count",
-              "id": "1"
-            }
-          ],
-          "bucketAggs": [
-            {
-              "type": "date_histogram",
-              "field": "@timestamp",
-              "id": "2",
-              "settings": {
-                "interval": "auto"
-              }
-            }
-          ]
-        },
-        {
-          "refId": "B",
-          "alias": "error",
-          "query": "log_group:\"/ecs/powersync-replication\" AND level:error",
-          "queryType": "lucene",
-          "timeField": "@timestamp",
-          "metrics": [
-            {
-              "type": "count",
-              "id": "1"
-            }
-          ],
-          "bucketAggs": [
-            {
-              "type": "date_histogram",
-              "field": "@timestamp",
-              "id": "2",
-              "settings": {
-                "interval": "auto"
-              }
-            }
-          ]
-        },
-        {
-          "refId": "C",
-          "alias": "fatal",
-          "query": "log_group:\"/ecs/powersync-replication\" AND level:fatal",
-          "queryType": "lucene",
-          "timeField": "@timestamp",
-          "metrics": [
-            {
-              "type": "count",
-              "id": "1"
-            }
-          ],
-          "bucketAggs": [
-            {
-              "type": "date_histogram",
-              "field": "@timestamp",
-              "id": "2",
-              "settings": {
-                "interval": "auto"
-              }
-            }
-          ]
-        }
-      ],
-      "description": "Replicator warn/error/fatal log volume over time (stacked by level)."
-    },
-    {
-      "type": "timeseries",
-      "title": "[Replicator] Replication signals (slot / LSN / snapshot / ECONNRESET / timeout)",
-      "id": 73,
-      "datasource": {
-        "type": "elasticsearch",
-        "uid": "${DS_OS}"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 89
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "custom": {
-            "drawStyle": "bars",
-            "fillOpacity": 60
-          }
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "query": "log_group:\"/ecs/powersync-replication\" AND message:(slot OR LSN OR snapshot OR ECONNRESET OR Timeout)",
-          "queryType": "lucene",
-          "timeField": "@timestamp",
-          "metrics": [
-            {
-              "type": "count",
-              "id": "1"
-            }
-          ],
-          "bucketAggs": [
-            {
-              "type": "date_histogram",
-              "field": "@timestamp",
-              "id": "2",
-              "settings": {
-                "interval": "auto"
-              }
-            }
-          ]
-        }
-      ],
-      "description": "Occurrences of slot / LSN / snapshot / ECONNRESET / timeout in replicator logs, early indicators of replication trouble (slot invalidation, change-stream timeouts, connection resets)."
-    },
-    {
       "type": "row",
       "title": "Logs",
       "collapsed": false,
@@ -1806,82 +1448,6 @@
         "y": 97
       },
       "id": 8
-    },
-    {
-      "type": "logs",
-      "title": "[API] Recent logs",
-      "id": 75,
-      "datasource": {
-        "type": "elasticsearch",
-        "uid": "${DS_OS}"
-      },
-      "gridPos": {
-        "h": 12,
-        "w": 12,
-        "x": 0,
-        "y": 98
-      },
-      "description": "Live API log lines (both API tasks, distinguish by log_stream), newest first. Level is controlled by the $level dropdown; refine further with the query bar.",
-      "options": {
-        "showTime": true,
-        "wrapLogMessage": true,
-        "dedupStrategy": "none",
-        "sortOrder": "Descending",
-        "enableLogDetails": true
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "query": "log_group:\"/ecs/powersync-api\" AND level:${level:lucene}",
-          "queryType": "lucene",
-          "timeField": "@timestamp",
-          "metrics": [
-            {
-              "type": "logs",
-              "id": "1"
-            }
-          ],
-          "bucketAggs": []
-        }
-      ]
-    },
-    {
-      "type": "logs",
-      "title": "[Replicator] Recent logs",
-      "id": 77,
-      "datasource": {
-        "type": "elasticsearch",
-        "uid": "${DS_OS}"
-      },
-      "gridPos": {
-        "h": 12,
-        "w": 12,
-        "x": 12,
-        "y": 98
-      },
-      "options": {
-        "showTime": true,
-        "wrapLogMessage": true,
-        "dedupStrategy": "none",
-        "sortOrder": "Descending",
-        "enableLogDetails": true
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "query": "log_group:\"/ecs/powersync-replication\" AND level:${level:lucene}",
-          "queryType": "lucene",
-          "timeField": "@timestamp",
-          "metrics": [
-            {
-              "type": "logs",
-              "id": "1"
-            }
-          ],
-          "bucketAggs": []
-        }
-      ],
-      "description": "Live replicator log lines, newest first. Level is controlled by the $level dropdown."
     }
   ]
 }

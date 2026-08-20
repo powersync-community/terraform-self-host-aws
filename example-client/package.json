@@ -8,12 +8,15 @@
     "seed": "tsx seed/seed.ts",
     "clear": "tsx seed/clear.ts",
     "token": "tsx auth/mint-token.ts",
+    "connect": "tsx connect.ts",
     "dev": "npm run token && npm run dev --prefix web",
     "test:least-privilege": "tsx test-least-privilege.ts"
   },
   "dependencies": {
     "@aws-sdk/client-ec2": "^3.700.0",
     "@aws-sdk/client-secrets-manager": "^3.700.0",
+    "@powersync/node": "^0.20.2",
+    "better-sqlite3": "^12.11.1",
     "jose": "^6.1.3",
     "pg": "^8.13.0"
   },
@@ -22,5 +25,10 @@
     "@types/pg": "^8.11.0",
     "tsx": "^4.19.2",
     "typescript": "^5.8.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ]
   }
 }

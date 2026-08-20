@@ -93,6 +93,10 @@ module "rds" {
 #   region_name   = "US_EAST_1"
 #   instance_size = "M10"
 #
+#   # Project-scoped names that would otherwise collide with module.atlas in the same Atlas project:
+#   db_username   = "powersync_storage"          # -> powersync_storage_{source,full,api} users
+#   api_role_name = "powersyncStorageApiStorage" # custom DB roles are project-scoped, so this must be unique
+#
 #   # Reuse the single regional PrivateLink endpoint created by module.atlas (see IMPORTANT note above).
 #   create_private_endpoint  = false
 #   existing_vpc_endpoint_id = module.atlas.vpc_endpoint_id
@@ -148,7 +152,7 @@ module "observability" {
 
   alert_destination = var.alert_destination
   alert_webhook_url = var.alert_webhook_url
-  dashboard_uid     = jsondecode(file("${path.module}/dashboards/powersync-overview.json")).uid
+  dashboard_uid     = replace(jsondecode(file("${path.module}/dashboards/powersync-overview.json")).uid, "powersync-", "${local.name_prefix}-")
 }
 
 module "iam" {

@@ -47,17 +47,20 @@ flowchart LR
 - **Auth:** Terraform generates the JWT signing key. Clients mint tokens locally; this example
   deploys no backend.
 
-> **Prefer MongoDB Atlas?** `infra/modules/atlas-cluster` is a worked example of using Atlas over AWS
-> PrivateLink as the data layer. See the commented block in `infra/main.tf`. One caveat: Atlas allows
-> a single PrivateLink service per region and project, so on Atlas the `deployment_name` prefix does
-> not isolate multiple deployments sharing a project and region the way RDS does.
+## Documentation
 
-## Repository layout
+Each area has its own guide, so you can read only what you need.
 
-| Path | What it is |
+| Guide | Read it for |
 |---|---|
-| [`infra/`](./infra) | The Terraform. See [`infra/README.md`](./infra/README.md) for prerequisites, setup, the apply/verify/destroy workflow, running multiple deployments, and how it works. |
-| [`example-client/`](./example-client) | Companion toolkit: bootstrap the database, seed it, mint a client token, run a minimal React client, and check least-privilege scoping. See [`example-client/README.md`](./example-client/README.md). |
+| [`infra/README.md`](./infra/README.md) | Deploying: prerequisites, apply, the database bootstrap, verify, destroy. |
+| [`infra/modules/observability/README.md`](./infra/modules/observability/README.md) | Monitoring PowerSync: metrics, dashboards, alerts, and cost. |
+| [`docs/database.md`](./docs/database.md) | The database: the two-database layout, least-privilege roles, replication, bootstrap, hardening. |
+| [`docs/auth.md`](./docs/auth.md) | Client auth: the JWKS, minting tokens, and key rotation. |
+| [`docs/networking.md`](./docs/networking.md) | The network and security model (VPC, security groups, ALB, TLS). |
+| [`docs/multiple-deployments.md`](./docs/multiple-deployments.md) | Running several independent deployments in one account. |
+| [`infra/modules/atlas-cluster/README.md`](./infra/modules/atlas-cluster/README.md) | Using MongoDB Atlas instead of RDS as the data layer. |
+| [`example-client/README.md`](./example-client/README.md) | The companion toolkit: bootstrap, seed, mint a token, run the React client. |
 
 ## Prerequisites
 

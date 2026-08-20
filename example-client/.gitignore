@@ -5,6 +5,11 @@ web/dist/
 # minted token + endpoint for the web client
 web/.env.local
 
+# local SQLite db created by the headless connect script (npm run connect)
+*.db
+*.db-shm
+*.db-wal
+
 # any stray keys
 *.pem
 *.key

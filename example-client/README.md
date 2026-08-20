@@ -16,6 +16,7 @@ client never touches the database; it syncs through the public ALB.
 | `npm run seed` | Create the demo `lists` table (if needed) and load a small dataset owned by two users. |
 | `npm run clear` | Drop the `lists` table. |
 | `npm run token` | Mint a 12h RS256 JWT (key from Secrets Manager) for `example-user`, writing `web/.env.local`. |
+| `npm run connect` | Headless client: connect to the deployed endpoint, wait for the first sync, and print the synced `lists` rows. Verifies sync without a browser. |
 | `npm run dev` | `token` plus the React client (`web/`). |
 | `npm run test:least-privilege` | Check that the source role is read-only and cannot reach the storage database. |
 
@@ -58,6 +59,11 @@ npm install --prefix web
 The page connects to the deployed PowerSync ALB and renders the `lists` synced for your user. Seeing
 your seeded rows in the browser confirms the path from Postgres through the replicator, bucket
 storage, and sync API to the client.
+
+Prefer the terminal? `npm run connect` does the same end to end without a browser: it mints a token,
+connects a headless PowerSync client, waits for the first sync, and prints the synced `lists` rows.
+It is the quickest way to confirm sync works, and connecting it makes the `concurrent_connections`
+metric and the client-sync dashboard panels go non-zero.
 
 ## 4. (Optional) Check least-privilege
 

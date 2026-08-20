@@ -1,0 +1,80 @@
+[
+  {
+    "id": 170,
+    "type": "timeseries",
+    "title": "[API] Error rate by level",
+    "datasource": { "type": "cloudwatch", "uid": "${DS_CW}" },
+    "gridPos": { "h": 8, "w": 12, "x": 0, "y": 81 },
+    "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "stacking": { "mode": "normal" } } }, "overrides": [] },
+    "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+    "targets": [
+      {
+        "refId": "A",
+        "datasource": { "type": "cloudwatch", "uid": "${DS_CW}" },
+        "queryMode": "Logs",
+        "region": "default",
+        "logGroupNames": ["/ecs/powersync-api"],
+        "expression": "filter level in [\"warn\", \"error\", \"fatal\"] | stats count() as count by bin(5m), level",
+        "statsGroups": ["level"]
+      }
+    ]
+  },
+  {
+    "id": 171,
+    "type": "timeseries",
+    "title": "[Replicator] Error rate by level",
+    "datasource": { "type": "cloudwatch", "uid": "${DS_CW}" },
+    "gridPos": { "h": 8, "w": 12, "x": 12, "y": 81 },
+    "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "stacking": { "mode": "normal" } } }, "overrides": [] },
+    "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+    "targets": [
+      {
+        "refId": "A",
+        "datasource": { "type": "cloudwatch", "uid": "${DS_CW}" },
+        "queryMode": "Logs",
+        "region": "default",
+        "logGroupNames": ["/ecs/powersync-replication"],
+        "expression": "filter level in [\"warn\", \"error\", \"fatal\"] | stats count() as count by bin(5m), level",
+        "statsGroups": ["level"]
+      }
+    ]
+  },
+  {
+    "id": 172,
+    "type": "logs",
+    "title": "[API] Recent logs",
+    "datasource": { "type": "cloudwatch", "uid": "${DS_CW}" },
+    "gridPos": { "h": 8, "w": 12, "x": 0, "y": 98 },
+    "options": { "showTime": true, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true },
+    "targets": [
+      {
+        "refId": "A",
+        "datasource": { "type": "cloudwatch", "uid": "${DS_CW}" },
+        "queryMode": "Logs",
+        "region": "default",
+        "logGroupNames": ["/ecs/powersync-api"],
+        "expression": "fields @timestamp, @message | sort @timestamp desc | limit 100",
+        "statsGroups": []
+      }
+    ]
+  },
+  {
+    "id": 173,
+    "type": "logs",
+    "title": "[Replicator] Recent logs",
+    "datasource": { "type": "cloudwatch", "uid": "${DS_CW}" },
+    "gridPos": { "h": 8, "w": 12, "x": 12, "y": 98 },
+    "options": { "showTime": true, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true },
+    "targets": [
+      {
+        "refId": "A",
+        "datasource": { "type": "cloudwatch", "uid": "${DS_CW}" },
+        "queryMode": "Logs",
+        "region": "default",
+        "logGroupNames": ["/ecs/powersync-replication"],
+        "expression": "fields @timestamp, @message | sort @timestamp desc | limit 100",
+        "statsGroups": []
+      }
+    ]
+  }
+]
