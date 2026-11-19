@@ -33,7 +33,7 @@ locals {
 
   # Full image reference shared by all three task definitions. The official public PowerSync
   # service image, pulled directly (no per-account ECR mirror needed).
-  image = "journeyapps/powersync-service:1.22.0"
+  image = "journeyapps/powersync-service:1.28.3"
 
   # Task sizing (Fargate CPU units / MiB). Kept here (not inline) because each pair feeds both
   # the Fargate guard in main.tf and the NODE_OPTIONS math below.

@@ -839,6 +839,75 @@
       "description": "Operations synced \u00f7 rows replicated (recording rule). High fan-out means one source row reaches many clients/buckets, often over-broad sync rules."
     },
     {
+      "type": "timeseries",
+      "title": "Sync connection errors & rejections (by code)",
+      "id": 35,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 39
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (outcome, close_reason, error_code) (increase(powersync_sync_connections_total{cluster=~\"$cluster\", outcome=~\"error|rejected\"}[5m]))",
+          "legendFormat": "{{outcome}} \u00b7 {{close_reason}} \u00b7 {{error_code}}"
+        }
+      ],
+      "description": "Sync connections that ended with a stream error or were rejected, per 5m, by PowerSync error code. Look up codes at https://docs.powersync.com/debugging/error-codes. Requires PowerSync Service 1.28.0+. Series start at the first error, so an empty panel means no errors yet."
+    },
+    {
+      "type": "timeseries",
+      "title": "Sync connection closes (by outcome \u00b7 reason)",
+      "id": 36,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 39
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (outcome, close_reason) (rate(powersync_sync_connections_total{cluster=~\"$cluster\"}[5m])) * 60",
+          "legendFormat": "{{outcome}} \u00b7 {{close_reason}}"
+        }
+      ],
+      "description": "Closed or rejected sync connections per minute, by outcome (ok, error, rejected) and close reason. A spike in service_closed or process_shutdown usually lines up with a deploy or pod restart. Requires PowerSync Service 1.28.0+."
+    },
+    {
       "type": "row",
       "title": "Storage & capacity",
       "collapsed": false,
@@ -846,7 +915,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 39
+        "y": 47
       },
       "id": 4
     },
@@ -862,7 +931,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 40
+        "y": 48
       },
       "fieldConfig": {
         "defaults": {
@@ -908,7 +977,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 40
+        "y": 48
       },
       "fieldConfig": {
         "defaults": {
@@ -954,7 +1023,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 48
+        "y": 56
       },
       "id": 5
     },
@@ -970,7 +1039,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 49
+        "y": 57
       },
       "fieldConfig": {
         "defaults": {
@@ -1026,7 +1095,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 49
+        "y": 57
       },
       "fieldConfig": {
         "defaults": {
@@ -1082,7 +1151,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 49
+        "y": 57
       },
       "fieldConfig": {
         "defaults": {
@@ -1124,7 +1193,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 57
+        "y": 65
       },
       "fieldConfig": {
         "defaults": {
@@ -1178,7 +1247,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 57
+        "y": 65
       },
       "fieldConfig": {
         "defaults": {
@@ -1241,7 +1310,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 65
+        "y": 73
       },
       "id": 6
     },
@@ -1257,7 +1326,7 @@
         "h": 6,
         "w": 6,
         "x": 0,
-        "y": 66
+        "y": 74
       },
       "description": "Count of 'Successfully compacted' lines in the compact log group over the dashboard range. Compaction runs daily at 02:00 UTC.",
       "options": {
@@ -1298,7 +1367,7 @@
         "h": 6,
         "w": 6,
         "x": 6,
-        "y": 66
+        "y": 74
       },
       "description": "EventBridge FailedInvocations for the compact rule, the task failed to LAUNCH (no app logs are produced in that case). >0 means scheduled compaction is broken.",
       "fieldConfig": {
@@ -1356,7 +1425,7 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 66
+        "y": 74
       },
       "fieldConfig": {
         "defaults": {
@@ -1399,7 +1468,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 72
+        "y": 80
       },
       "options": {
         "showTime": true,
@@ -1433,7 +1502,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 80
+        "y": 88
       },
       "id": 7
     },
@@ -1445,7 +1514,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 97
+        "y": 105
       },
       "id": 8
     }

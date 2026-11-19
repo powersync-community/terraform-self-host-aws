@@ -78,7 +78,7 @@ One dashboard, "PowerSync: Self-Hosted Overview", laid out top-down by what you 
 
 1. **Service health (SLOs).** At-a-glance stat tiles: current replication lag, replicator up, API healthy host count, concurrent connections, operations synced per second, and API 5xx rate.
 2. **Replication pipeline.** Replication lag over time (by instance), rows/transactions/chunks replicated per second, data replicated bytes per second, and a count of replicator restarts.
-3. **Client sync / API.** Concurrent connections over time, sync throughput (operations and bytes per second), compression ratio (bytes sent versus synced), bytes per connection, and operations per row (sync-rule fan-out).
+3. **Client sync / API.** Concurrent connections over time, sync throughput (operations and bytes per second), compression ratio (bytes sent versus synced), bytes per connection, operations per row (sync-rule fan-out), sync connections that ended in an error or were rejected (by PowerSync error code), and all connection closes by outcome and reason. The two connection panels use `powersync_sync_connections_total`, which needs PowerSync Service 1.28.0 or later.
 4. **Storage and capacity.** Stacked storage size (replication plus operation plus parameter bytes) and the parameter-storage bloat ratio. Watch the operation-storage line for a daily saw-tooth: a healthy nightly compaction makes it drop, and a flat-rising line means compaction is not reclaiming space.
 5. **Infrastructure (ECS / ALB).** ECS CPU and memory utilization, API running task count, load-balancer request and 5xx counts, and target response time at p50, p90, and p99.
 6. **Compaction.** Compaction emits no metrics (it is a short-lived CLI job), so this row is logs-first: successful-run and launch-failure counts, a runs-over-time view, and the raw compaction log panel.
@@ -95,8 +95,11 @@ One dashboard, "PowerSync: Self-Hosted Overview", laid out top-down by what you 
 | `PowerSyncReplicationLagCritical` | `max(powersync_replication_lag_seconds) > 300` | 5m | critical |
 | `PowerSyncReplicationLagHigh` | `max(powersync_replication_lag_seconds) > 60` | 5m | warning |
 | `PowerSyncParameterStorageBloat` | `powersync:param_bloat:ratio > 0.5` | 30m | warning |
+| `PowerSyncSyncConnectionErrors` | `sum(increase(powersync_sync_connections_total{outcome=~"error\|rejected"}[5m])) > 10` | 10m | warning |
 
 The parameter-bloat rule fires when parameter storage passes 50% of data storage, a precursor to checksum timeouts.
+
+The sync-connection rule fires when more than 10 sync connections in 5 minutes end in a stream error or are rejected. It needs PowerSync Service 1.28.0 or later. The series appears only after the first error, so the rule stays silent until then. Treat 10 as a starting point and tune it to your normal background rate. The dashboard panel shows which [error code](https://docs.powersync.com/debugging/error-codes) is behind the alert.
 
 ### CloudWatch alarms (infrastructure)
 

@@ -167,8 +167,8 @@ locals {
       }
     }
     healthCheck = {
-      # The powersync-service image is node:slim; it has no curl/wget. Use node's global
-      # fetch (node 22) for the probe; a curl-based check fails forever and cycles the task.
+      # The powersync-service image (Alpine since 1.28.0) has no curl. Use node's global
+      # fetch for the probe; a curl-based check fails forever and cycles the task.
       command     = ["CMD-SHELL", "node -e 'fetch(\"http://localhost:8080/probes/liveness\").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))'"]
       interval    = 30
       timeout     = 5
