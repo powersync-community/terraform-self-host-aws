@@ -4,7 +4,7 @@
     "type": "timeseries",
     "title": "[API] Error rate by level",
     "datasource": { "type": "cloudwatch", "uid": "${DS_CW}" },
-    "gridPos": { "h": 8, "w": 12, "x": 0, "y": 81 },
+    "gridPos": { "h": 8, "w": 12, "x": 0, "y": 89 },
     "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "stacking": { "mode": "normal" } } }, "overrides": [] },
     "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
     "targets": [
@@ -24,7 +24,7 @@
     "type": "timeseries",
     "title": "[Replicator] Error rate by level",
     "datasource": { "type": "cloudwatch", "uid": "${DS_CW}" },
-    "gridPos": { "h": 8, "w": 12, "x": 12, "y": 81 },
+    "gridPos": { "h": 8, "w": 12, "x": 12, "y": 89 },
     "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "stacking": { "mode": "normal" } } }, "overrides": [] },
     "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
     "targets": [
@@ -44,7 +44,7 @@
     "type": "logs",
     "title": "[API] Recent logs",
     "datasource": { "type": "cloudwatch", "uid": "${DS_CW}" },
-    "gridPos": { "h": 8, "w": 12, "x": 0, "y": 98 },
+    "gridPos": { "h": 8, "w": 12, "x": 0, "y": 106 },
     "options": { "showTime": true, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true },
     "targets": [
       {
@@ -63,7 +63,7 @@
     "type": "logs",
     "title": "[Replicator] Recent logs",
     "datasource": { "type": "cloudwatch", "uid": "${DS_CW}" },
-    "gridPos": { "h": 8, "w": 12, "x": 12, "y": 98 },
+    "gridPos": { "h": 8, "w": 12, "x": 12, "y": 106 },
     "options": { "showTime": true, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true },
     "targets": [
       {

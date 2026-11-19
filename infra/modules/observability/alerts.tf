@@ -160,6 +160,17 @@ resource "aws_prometheus_rule_group_namespace" "alerts" {
               title: "PowerSync: parameter storage bloat"
               summary: "Parameter storage exceeds 50% of data storage; precursor to checksum timeouts."
               value: "{{ $value }}"
+          # Requires PowerSync Service 1.28.0+. The series only appears after the first error or
+          # rejection, so this rule stays silent (not firing) until then. The threshold is a starting
+          # point: tune it to your client count once you know the normal background rate.
+          - alert: PowerSyncSyncConnectionErrors
+            expr: sum(increase(powersync_sync_connections_total{outcome=~"error|rejected"}[5m])) > 10
+            for: 10m
+            labels: { severity: warning }
+            annotations:
+              title: "PowerSync: sync connection errors"
+              summary: "More than 10 sync connections per 5m are ending in an error or being rejected. Check the dashboard panel for the error code."
+              value: "{{ $value }}"
   EOT
 }
 
