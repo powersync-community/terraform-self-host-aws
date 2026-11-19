@@ -9,6 +9,7 @@
     "clear": "tsx seed/clear.ts",
     "token": "tsx auth/mint-token.ts",
     "connect": "tsx connect.ts",
+    "load": "tsx load.ts",
     "dev": "npm run token && npm run dev --prefix web",
     "test:least-privilege": "tsx test-least-privilege.ts"
   },

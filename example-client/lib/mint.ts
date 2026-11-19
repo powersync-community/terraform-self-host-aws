@@ -9,6 +9,16 @@ import { tfOutput } from "./tf-outputs.ts";
 // The subject becomes request.user_id() in the sync rules, so it must match a row's owner_id for
 // anything to sync. Expiry stays within PowerSync's 24h maximum.
 export async function mintToken(subject = "example-user", expiresIn = "12h"): Promise<{ endpoint: string; token: string }> {
+  const { endpoint, mint } = await createMinter();
+  return { endpoint, token: await mint(subject, expiresIn) };
+}
+
+// Load the signing key once and return a function that signs tokens for any subject. Used by the
+// load generator, which needs one token per virtual user without a Secrets Manager call each time.
+export async function createMinter(): Promise<{
+  endpoint: string;
+  mint: (subject: string, expiresIn?: string) => Promise<string>;
+}> {
   const secretArn = tfOutput("jwt_signing_key_secret_arn");
   const kid = tfOutput("jwt_signing_kid");
   const audience = tfOutput("jwt_audience");
@@ -23,13 +33,14 @@ export async function mintToken(subject = "example-user", expiresIn = "12h"): Pr
   // jose's SignJWT accepts the resulting KeyObject directly.
   const key = createPrivateKey(SecretString);
 
-  const token = await new SignJWT({})
-    .setProtectedHeader({ alg: "RS256", kid })
-    .setSubject(subject)
-    .setAudience(audience)
-    .setIssuedAt()
-    .setExpirationTime(expiresIn)
-    .sign(key);
+  const mint = (subject: string, expiresIn = "12h") =>
+    new SignJWT({})
+      .setProtectedHeader({ alg: "RS256", kid })
+      .setSubject(subject)
+      .setAudience(audience)
+      .setIssuedAt()
+      .setExpirationTime(expiresIn)
+      .sign(key);
 
-  return { endpoint, token };
+  return { endpoint, mint };
 }

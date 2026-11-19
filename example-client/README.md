@@ -17,6 +17,7 @@ client never touches the database; it syncs through the public ALB.
 | `npm run clear` | Drop the `lists` table. |
 | `npm run token` | Mint a 12h RS256 JWT (key from Secrets Manager) for `example-user`, writing `web/.env.local`. |
 | `npm run connect` | Headless client: connect to the deployed endpoint, wait for the first sync, and print the synced `lists` rows. Verifies sync without a browser. |
+| `npm run load` | Load generator: many simulated clients that connect, hold, disconnect and reconnect, plus a writer on the source database. Fills the dashboard panels. |
 | `npm run dev` | `token` plus the React client (`web/`). |
 | `npm run test:least-privilege` | Check that the source role is read-only and cannot reach the storage database. |
 
@@ -74,6 +75,30 @@ npm run test:least-privilege
 Connects as the restricted `powersync_source` role and checks three things: it can read the source
 `lists` table, it is denied writing to it (replication only reads), and it cannot reach the bucket
 storage database.
+
+## 5. (Optional) Generate load
+
+```bash
+npm run load                                  # 50 users, 10 min, 2 writes/s
+npm run load -- --users 200 --duration 30m
+npm run load -- --burst 500                   # also exercise rejections
+npm run load -- --writes 0 --rows 0           # connections only, no database access
+npm run load -- --help                        # all options
+```
+
+Simulates many clients so the dashboard and alerts have data. Each virtual user (`load-user-<n>`)
+gets its own token and its own seeded `lists` rows, so it syncs its own bucket. Each user opens a
+sync stream, holds it for 10s to 2m, disconnects, and reconnects. A writer inserts, updates and
+deletes rows in the source database at the set rate. Clients use the sync protocol directly over
+HTTP (no SQLite), so one machine can run hundreds.
+
+`--burst <n>` opens `n` extra streams at once in the middle of the run. When the total goes past the
+per-task `max_concurrent_connections` (200 per api task, see `../infra/locals.tf`), the service
+rejects the extra streams with HTTP 429. The rejections show in the "Sync connection errors" panel
+and fire the `PowerSyncSyncConnectionErrors` alert (service 1.28.0+).
+
+The script prints a status line every 10s. At the end it deletes the `load-user-*` rows (`--keep`
+to leave them). Run `npm run seed` once before the first run so the `lists` table exists.
 
 ## Notes
 
