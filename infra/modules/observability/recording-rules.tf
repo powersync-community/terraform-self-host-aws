@@ -1,7 +1,9 @@
 ###############################################################################
 # AMP recording rules materialize the derived signals once so dashboards and
 # alerts reference the same named series (single source of truth). Names match the
-# series the dashboard panels query.
+# series the dashboard panels query. Every rule keeps the `cluster` label (sum by
+# (cluster)), because the panels filter on cluster=~"$cluster": a bare sum() drops the
+# label and the panel shows "No data".
 ###############################################################################
 
 resource "aws_prometheus_rule_group_namespace" "derived" {
@@ -15,16 +17,16 @@ resource "aws_prometheus_rule_group_namespace" "derived" {
         interval: 30s
         rules:
           - record: powersync:replication_rate:rows5m
-            expr: sum(rate(powersync_rows_replicated_total[5m]))
+            expr: sum by (cluster) (rate(powersync_rows_replicated_total[5m]))
           - record: powersync:ops_synced:rate5m
-            expr: sum(rate(powersync_operations_synced_total[5m]))
+            expr: sum by (cluster) (rate(powersync_operations_synced_total[5m]))
           - record: powersync:compression:ratio5m
-            expr: sum(rate(powersync_data_sent_bytes_total[5m])) / clamp_min(sum(rate(powersync_data_synced_bytes_total[5m])), 1)
+            expr: sum by (cluster) (rate(powersync_data_sent_bytes_total[5m])) / clamp_min(sum by (cluster) (rate(powersync_data_synced_bytes_total[5m])), 1)
           - record: powersync:bytes_per_conn:5m
-            expr: sum(rate(powersync_data_synced_bytes_total[5m])) / clamp_min(sum(powersync_concurrent_connections), 1)
+            expr: sum by (cluster) (rate(powersync_data_synced_bytes_total[5m])) / clamp_min(sum by (cluster) (powersync_concurrent_connections), 1)
           - record: powersync:ops_per_row:5m
-            expr: sum(rate(powersync_operations_synced_total[5m])) / clamp_min(sum(rate(powersync_rows_replicated_total[5m])), 1)
+            expr: sum by (cluster) (rate(powersync_operations_synced_total[5m])) / clamp_min(sum by (cluster) (rate(powersync_rows_replicated_total[5m])), 1)
           - record: powersync:param_bloat:ratio
-            expr: sum(powersync_parameter_storage_size_bytes) / clamp_min(sum(powersync_replication_storage_size_bytes) + sum(powersync_operation_storage_size_bytes), 1)
+            expr: sum by (cluster) (powersync_parameter_storage_size_bytes) / clamp_min(sum by (cluster) (powersync_replication_storage_size_bytes) + sum by (cluster) (powersync_operation_storage_size_bytes), 1)
   EOT
 }
