@@ -204,7 +204,7 @@
           "expr": "max(powersync_replication_lag_seconds{cluster=~\"$cluster\"})"
         }
       ],
-      "description": "Current replication lag, how far behind the source database the replicator is. Green <30s, amber 30\u201360s, red >60s. The single most important sync-health signal."
+      "description": "**What it shows:** How far behind the source database PowerSync is right now. A change written to the source reaches clients after about this long.\n\n**Healthy:** Green, under 30 seconds. Short spikes during large writes or bulk imports are normal.\n\n**If not:** Amber is 30 to 60 seconds, red is over 60 seconds. If it stays high or keeps growing, check the Replicator logs and the source database load. See [Replication lag](https://docs.powersync.com/maintenance-ops/replication-lag)."
     },
     {
       "type": "stat",
@@ -268,7 +268,7 @@
           "expr": "(count(powersync_replication_lag_seconds{cluster=~\"$cluster\"}) > bool 0)"
         }
       ],
-      "description": "Whether the replicator is running and reporting metrics. DOWN means no active replication, so nothing syncs to clients."
+      "description": "**What it shows:** Whether the replicator is running and sending metrics.\n\n**Healthy:** UP.\n\n**If not:** DOWN means nothing new reaches clients. Check that the replication task is running in ECS and read the [Replicator] Recent logs panel."
     },
     {
       "type": "stat",
@@ -325,7 +325,7 @@
           "metricEditorMode": 0
         }
       ],
-      "description": "API targets the ALB considers healthy (per target group). Should equal the running API task count; 0 means clients can't reach the sync API."
+      "description": "**What it shows:** How many API tasks the load balancer can send client traffic to.\n\n**Healthy:** The same number as the running API tasks (see API running task count).\n\n**If not:** 0 means clients cannot connect at all. A number lower than the running tasks means some tasks fail their health check. Read the [API] Recent logs panel."
     },
     {
       "type": "stat",
@@ -356,7 +356,21 @@
           "expr": "sum(powersync_concurrent_connections{cluster=~\"$cluster\"})"
         }
       ],
-      "description": "Live client sync connections across all API tasks (powersync_concurrent_connections). This metric also drives API autoscaling."
+      "description": "**What it shows:** How many clients are connected and syncing right now, over all API tasks. This number also drives API autoscaling.\n\n**Healthy:** Follows your user activity, for example higher during the day.\n\n**If not:** A sudden drop to 0 while users are active means clients cannot connect. Check API healthy hosts and API 5xx rate.",
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
     },
     {
       "type": "stat",
@@ -374,7 +388,16 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "ops"
+          "unit": "ops",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
@@ -393,7 +416,7 @@
           "expr": "sum(rate(powersync_operations_synced_total{cluster=~\"$cluster\"}[5m]))"
         }
       ],
-      "description": "Rate of sync operations sent to clients (rate of powersync_operations_synced_total). 'No data' at idle is normal, it means no client traffic."
+      "description": "**What it shows:** How many changes (operations) PowerSync sends to clients per second, averaged over 5 minutes. One operation is one row created, updated or deleted on one client.\n\n**Healthy:** Any value. A high number only means a busy app. 'No data' or 0 when no clients are syncing is normal.\n\n**If not:** Compare with Concurrent connections. Many connections but 0 operations for a long time, while the source data changes, can mean sync is stuck."
     },
     {
       "type": "stat",
@@ -450,7 +473,7 @@
           "metricEditorMode": 0
         }
       ],
-      "description": "ALB target 5xx responses, server-side errors reaching clients. Should stay at 0."
+      "description": "**What it shows:** Server errors (HTTP 5xx) that the API sent back to clients.\n\n**Healthy:** 0.\n\n**If not:** Any value above 0 means some client requests failed. Read the [API] Recent logs panel and the [API] Error rate by level panel."
     },
     {
       "type": "row",
@@ -512,7 +535,7 @@
           "legendFormat": "{{instance_id}}"
         }
       ],
-      "description": "Replication lag over time, per instance. Sustained growth means the replicator is falling behind the source database."
+      "description": "**What it shows:** Replication lag over time: how far behind the source database PowerSync is.\n\n**Healthy:** Flat and low (seconds). Short spikes during bulk writes that come back down are normal.\n\n**If not:** A line that keeps going up means PowerSync cannot keep up with the source database. See [Replication lag](https://docs.powersync.com/maintenance-ops/replication-lag)."
     },
     {
       "type": "timeseries",
@@ -555,7 +578,7 @@
           "legendFormat": "chunks/s"
         }
       ],
-      "description": "Throughput pulled from the source per second: rows, transactions, and replication chunks. Flatlining while the source is being written indicates a stall."
+      "description": "**What it shows:** How much PowerSync reads from the source database per second. **Rows** are changed rows. **Transactions** are committed transactions. **Chunks** are the batches PowerSync receives from the database's replication stream. The database sends about one empty chunk per second even when nothing changes, so chunks stay above 0 when the app is idle.\n\n**Healthy:** Rows and transactions go up and down with your app's write activity.\n\n**If not:** Rows and transactions at 0 while your app writes to the source database means replication is stuck. Check Replication lag and the [Replicator] Recent logs panel. See [Replication lag](https://docs.powersync.com/maintenance-ops/replication-lag)."
     },
     {
       "type": "timeseries",
@@ -588,7 +611,7 @@
           "legendFormat": "replicated"
         }
       ],
-      "description": "Uncompressed bytes read from the source and replicated into bucket storage, per second."
+      "description": "**What it shows:** How many bytes of changed data PowerSync reads from the source database per second.\n\n**Healthy:** Goes up and down with write activity in the source database.\n\n**If not:** Large steady values with growing Replication lag can mean the writes are too big for the replicator. Compare with Replicated / s."
     },
     {
       "type": "timeseries",
@@ -630,7 +653,7 @@
           "statsGroups": []
         }
       ],
-      "description": "Count of 'Starting Replication Engine' log lines, each marks a replicator (re)start. Frequent restarts indicate crash-looping."
+      "description": "**What it shows:** How many times the replicator started, per hour. Each deploy, task replacement or crash causes one start.\n\n**Healthy:** A start only when you deploy or change the service.\n\n**If not:** Repeated starts without a deploy mean the replicator crashes and restarts. Read the [Replicator] Recent logs panel for the error before each start."
     },
     {
       "type": "row",
@@ -675,7 +698,7 @@
           "legendFormat": "connections"
         }
       ],
-      "description": "Active client sync connections over time (summed across API tasks)."
+      "description": "**What it shows:** How many clients are connected and syncing over time, over all API tasks. This number drives API autoscaling.\n\n**Healthy:** Follows your user activity.\n\n**If not:** A sudden drop while users are active means clients cannot connect. A sudden spike can come from all clients reconnecting after a deploy or a network problem."
     },
     {
       "type": "timeseries",
@@ -720,6 +743,10 @@
               {
                 "id": "unit",
                 "value": "ops"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
               }
             ]
           }
@@ -737,7 +764,7 @@
           "legendFormat": "data synced/s"
         }
       ],
-      "description": "Operations and uncompressed bytes synced to clients per second."
+      "description": "**What it shows:** How much PowerSync sends to clients per second. **Ops synced** (right axis) is the number of row changes. **Data synced** (left axis) is their size in bytes, before compression.\n\n**Healthy:** Follows client activity: high when many clients sync or do their first sync, low when idle.\n\n**If not:** A big rise without more users or more data changes can mean clients download everything again, for example after a sync rules change or when they reconnect without saved data."
     },
     {
       "type": "timeseries",
@@ -770,7 +797,7 @@
           "legendFormat": "compression ratio"
         }
       ],
-      "description": "Bytes sent to clients \u00f7 uncompressed bytes synced (AMP recording rule). Lower is better wire compression."
+      "description": "**What it shows:** Bytes sent over the network divided by the size of the data before compression. 0.2 means clients download 20% of the original size (80% saved).\n\n**Healthy:** Lower is better: less bandwidth for mobile users and lower network cost. Values well below 1 mean compression works.\n\n**If not:** A value near 1 means the data is not compressed. Usually a proxy or load balancer between the clients and PowerSync removes the compression headers."
     },
     {
       "type": "timeseries",
@@ -803,7 +830,7 @@
           "legendFormat": "bytes/conn"
         }
       ],
-      "description": "Uncompressed sync bytes per active connection (recording rule). Spikes point to heavy per-client buckets."
+      "description": "**What it shows:** Bytes sent per second for each connected client, before compression.\n\n**Healthy:** Stable over time for your app.\n\n**If not:** Spikes mean some clients download a lot of data, for example a first sync of large buckets or a sync rules change that makes clients download everything again."
     },
     {
       "type": "timeseries",
@@ -836,7 +863,7 @@
           "legendFormat": "ops/row"
         }
       ],
-      "description": "Operations synced \u00f7 rows replicated (recording rule). High fan-out means one source row reaches many clients/buckets, often over-broad sync rules."
+      "description": "**What it shows:** How many operations clients download for each row that changes in the source database. Example: a row that only one user syncs gives about 1. A row in a table that all 1,000 users sync gives about 1,000.\n\n**Healthy:** Stable over time. High values are normal for data that all users share, but every change to that data is then downloaded by every user.\n\n**If not:** A value that grows, or is much higher than you expect, can mean the sync rules send data to more users than need it. First syncs and reconnects also raise this value, because clients download operations without any row changing."
     },
     {
       "type": "timeseries",
@@ -872,7 +899,7 @@
           "legendFormat": "{{outcome}} \u00b7 {{close_reason}} \u00b7 {{error_code}}"
         }
       ],
-      "description": "Sync connections that ended with a stream error or were rejected, per 5m, by PowerSync error code. Look up codes at https://docs.powersync.com/debugging/error-codes. Requires PowerSync Service 1.28.0+. Series start at the first error, so an empty panel means no errors yet."
+      "description": "**What it shows:** Sync connections that ended with an error or were rejected, per 5 minutes, by error code. Look up each code in the [error codes](https://docs.powersync.com/debugging/error-codes). Needs PowerSync Service 1.28.0 or later.\n\n**Healthy:** No data. The lines only start after the first error.\n\n**If not:** **rejected** usually means an API task reached its connection limit, so check that autoscaling adds tasks. For **error**, look up the code in the error codes page."
     },
     {
       "type": "timeseries",
@@ -905,7 +932,7 @@
           "legendFormat": "{{outcome}} \u00b7 {{close_reason}}"
         }
       ],
-      "description": "Closed or rejected sync connections per minute, by outcome (ok, error, rejected) and close reason. A spike in service_closed or process_shutdown usually lines up with a deploy or pod restart. Requires PowerSync Service 1.28.0+."
+      "description": "**What it shows:** Sync connections that closed per minute, by result (ok, error, rejected) and reason. Needs PowerSync Service 1.28.0 or later.\n\n**Healthy:** Mostly ok / client_closed: clients go offline or close the app.\n\n**If not:** A spike in service_closed or process_shutdown usually matches a deploy or a task restart. Use Sync connection errors & rejections for the error details."
     },
     {
       "type": "row",
@@ -963,7 +990,7 @@
           "legendFormat": "parameters"
         }
       ],
-      "description": "Bucket storage size split by replication / operation / parameter data. Watch the total trend for capacity planning."
+      "description": "**What it shows:** Disk space PowerSync uses in its bucket storage database, in three parts, stacked (the top line is the total). **Replication**: PowerSync's copy of the source rows that it syncs. **Operations**: the changes that clients download, including old changes until compaction removes them. Usually the largest part. **Parameters**: lookup data that the sync rules use to decide which data each user gets. Usually small.\n\n**Healthy:** Grows slowly with your data.\n\n**If not:** Operations growing much faster than your source data means compaction does not keep up. See [Compacting buckets](https://docs.powersync.com/maintenance-ops/compacting-buckets). Parameters growing fast: see Parameter-storage bloat ratio."
     },
     {
       "type": "timeseries",
@@ -1013,7 +1040,7 @@
           "legendFormat": "param / data"
         }
       ],
-      "description": "Parameter storage \u00f7 (replication + operation storage), a recording rule. A high or growing ratio precedes checksum timeouts (PSYNC_S2403)."
+      "description": "**What it shows:** Parameter storage size divided by the rest of the bucket storage. Parameter storage is the lookup data the sync rules use to decide which data each user gets.\n\n**Healthy:** Low and stable, well below 0.5. An alert fires above 0.5.\n\n**If not:** A high or growing value makes each client connection slower to set up, and can cause storage query timeouts. Check sync rules whose parameter queries return many rows per user."
     },
     {
       "type": "row",
@@ -1081,7 +1108,7 @@
           "metricEditorMode": 0
         }
       ],
-      "description": "Average CPU % per service (api, replication). The API autoscaler targets a CPU threshold."
+      "description": "**What it shows:** Average CPU use of the API and replication tasks, in percent.\n\n**Healthy:** Below about 70% most of the time. The API autoscaler adds tasks when CPU stays high.\n\n**If not:** The replicator near 100% for a long time can cause Replication lag. API near 100% with the maximum number of tasks running means you need more or bigger tasks."
     },
     {
       "type": "timeseries",
@@ -1137,7 +1164,7 @@
           "metricEditorMode": 0
         }
       ],
-      "description": "Average memory % per service. Sustained high memory risks OOM and task restarts."
+      "description": "**What it shows:** Average memory use of the API and replication tasks, in percent.\n\n**Healthy:** Stable, below about 80%.\n\n**If not:** Memory that keeps going up, or stays near 100%, can make tasks run out of memory and restart. Check Replicator restarts and API running task count."
     },
     {
       "type": "timeseries",
@@ -1179,7 +1206,7 @@
           "metricEditorMode": 0
         }
       ],
-      "description": "Running API Fargate tasks (Container Insights). Moves between min and max capacity as the autoscaler reacts to load."
+      "description": "**What it shows:** How many API tasks are running. The autoscaler adds or removes tasks between the minimum and the maximum.\n\n**Healthy:** Goes up with Concurrent connections or CPU and comes back down after.\n\n**If not:** Stuck at the maximum while connections are rejected means the maximum is too low."
     },
     {
       "type": "timeseries",
@@ -1233,7 +1260,7 @@
           "metricEditorMode": 0
         }
       ],
-      "description": "ALB request volume and target 5xx count. A rising 5xx line means server errors are reaching clients."
+      "description": "**What it shows:** Requests to the API through the load balancer, and how many of them failed with a server error (5xx).\n\n**Healthy:** Requests follow user activity. 5xx stays at 0.\n\n**If not:** A 5xx line above 0 means client requests fail. Read the [API] Recent logs panel."
     },
     {
       "type": "timeseries",
@@ -1300,7 +1327,7 @@
           "metricEditorMode": 0
         }
       ],
-      "description": "Latency of API responses behind the ALB (p50/p90/p99). A climbing p99 indicates slow sync responses under load."
+      "description": "**What it shows:** How long the API takes to answer requests: p50 is a typical request, p99 is the slowest 1%. Sync streams stay open for a long time, so these numbers can be high and that alone is not a problem.\n\n**Healthy:** Stable over time.\n\n**If not:** A p99 that keeps going up under load means the API tasks are overloaded. Compare with ECS CPU utilization and API running task count."
     },
     {
       "type": "row",
@@ -1328,7 +1355,7 @@
         "x": 0,
         "y": 74
       },
-      "description": "Count of 'Successfully compacted' lines in the compact log group over the dashboard range. Compaction runs daily at 02:00 UTC.",
+      "description": "**What it shows:** How many compaction runs finished successfully in the selected time range. Compaction removes old operations from bucket storage. It runs every day at 02:00 UTC.\n\n**Healthy:** About one for each day in the range.\n\n**If not:** 0 over several days means compaction does not run or fails. Check the Compaction logs panel and Scheduled-run launch failures. See [Compacting buckets](https://docs.powersync.com/maintenance-ops/compacting-buckets).",
       "options": {
         "reduceOptions": {
           "calcs": [
@@ -1353,7 +1380,21 @@
           "expression": "filter @message like /Successfully compacted/ | stats count() as successes",
           "statsGroups": []
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
     },
     {
       "type": "stat",
@@ -1369,7 +1410,7 @@
         "x": 6,
         "y": 74
       },
-      "description": "EventBridge FailedInvocations for the compact rule, the task failed to LAUNCH (no app logs are produced in that case). >0 means scheduled compaction is broken.",
+      "description": "**What it shows:** How many times the daily compaction task could not start (EventBridge FailedInvocations). When the task cannot start, it writes no logs.\n\n**Healthy:** 0.\n\n**If not:** Above 0 means daily compaction does not run. Check the EventBridge rule and the task's IAM role and network settings.",
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -1454,7 +1495,7 @@
           "statsGroups": []
         }
       ],
-      "description": "Compaction runs (success vs failure) over time, from the compact log group."
+      "description": "**What it shows:** Compaction runs per day, successful and failed.\n\n**Healthy:** One successful run each day.\n\n**If not:** Failed runs or missing days: read the Compaction logs panel. See [Compacting buckets](https://docs.powersync.com/maintenance-ops/compacting-buckets)."
     },
     {
       "type": "logs",
@@ -1492,7 +1533,7 @@
           "statsGroups": []
         }
       ],
-      "description": "Raw compact task logs, the 'Performing / Successfully / Failed to compact' lines."
+      "description": "**What it shows:** The latest log lines from the compaction task.\n\n**Healthy:** 'Performing compact' followed by 'Successfully compacted'.\n\n**If not:** 'Failed to compact' lines contain the error. Search the message in the error codes page."
     },
     {
       "type": "row",
